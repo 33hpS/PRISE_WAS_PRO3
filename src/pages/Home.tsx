@@ -1,9 +1,7 @@
 /**
- * Home page component: main dashboard with navigation and feature panels.
- * Adds CurrencyRates widget (USD, EUR, RUB, KZT, CNY vs KGS) with caching and refresh.
- * Notes:
- * - Uses react-router-dom's useNavigate to match BrowserRouter in App.tsx (prevents React #310)
- * - No external CDN injections (Tailwind built locally)
+ * Home page component
+ * Purpose: Provide a rich, production-ready dashboard with navigation, metrics,
+ * quick actions, and entry panels. Uses react-router-dom to align with App.tsx router.
  */
 
 import { useEffect, useState } from 'react'
@@ -24,7 +22,7 @@ import TechCardHistory from '../components/TechCardHistory'
 import UserManagement from '../components/UserManagement'
 import RoleGuard from '../components/RoleGuard'
 import LabelGenerator from '../components/LabelGenerator'
-import { getCurrentUserWithRole, type UserWithRole } from '../lib/auth'
+import { getCurrentUserWithRole, UserWithRole } from '../lib/auth'
 import { supabase } from '../lib/supabase'
 import CurrencyRates from '../components/CurrencyRates'
 
@@ -247,7 +245,7 @@ export default function Home() {
           </Card>
         </div>
 
-        {/* Desktop Navigation (custom buttons, no Tabs) */}
+        {/* Desktop Navigation */}
         <div className="hidden lg:block">
           <div className="space-y-6">
             <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
@@ -604,9 +602,9 @@ export default function Home() {
                       </CardTitle>
                       <CardDescription>Управление типами отображения продукции</CardDescription>
                     </CardHeader>
-                    <CardContent>
-                      <ProductViewTypesManager />
-                    </CardContent>
+                      <CardContent>
+                        <ProductViewTypesManager />
+                      </CardContent>
                   </Card>
                 </div>
               )}
@@ -898,7 +896,7 @@ export default function Home() {
                       <Settings className="w-5 h-5" />
                       Типы отображения
                     </CardTitle>
-                  <CardDescription>Управление типами отображения продукции</CardDescription>
+                    <CardDescription>Управление типами отображения продукции</CardDescription>
                   </CardHeader>
                   <CardContent>
                     <ProductViewTypesManager />

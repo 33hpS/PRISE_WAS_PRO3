@@ -1,5 +1,5 @@
 import { build as esbuild } from 'esbuild'
-import { readFileSync, writeFileSync, existsSync, mkdirSync, copyFileSync } from 'fs'
+import { readFileSync, writeFileSync, existsSync, mkdirSync, copyFileSync, unlinkSync } from 'fs'
 import { exec } from 'child_process'
 import { promisify } from 'util'
 
@@ -55,8 +55,11 @@ async function buildCSS() {
 
     // Clean up temp file
     if (existsSync('temp-input.css')) {
-      const fs = await import('fs')
-      fs.unlinkSync('temp-input.css')
+      try {
+        unlinkSync('temp-input.css')
+      } catch {
+        // ignore
+      }
     }
 
     console.log('✅ CSS built successfully')
@@ -164,12 +167,11 @@ export default React;`
  */
 function cleanupTempFiles() {
   const tempFiles = ['react-shim.js', 'temp-input.css']
-  tempFiles.forEach(file => {
+  tempFiles.forEach((file) => {
     if (existsSync(file)) {
-      const fs = require('fs')
       try {
-        fs.unlinkSync(file)
-      } catch (e) {
+        unlinkSync(file)
+      } catch {
         // ignore cleanup errors
       }
     }
