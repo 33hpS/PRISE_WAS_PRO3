@@ -1,16 +1,18 @@
 /*
-  X-Frame-Options: DENY
+
+  Content-Security-Policy:
+    default-src 'self';
+    script-src 'self' 'unsafe-eval';
+    style-src 'self' 'unsafe-inline';
+    img-src 'self' https: data: blob:;
+    font-src 'self' https: data:;
+    connect-src 'self' https://fpgzozsspaipegxcfzug.supabase.co https://*.supabase.co https://*.supabase.in https://api.open-meteo.com https://api.openweathermap.org;
+    frame-ancestors 'self';
+    base-uri 'self';
+
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin
-  Cache-Control: public, max-age=600
+  Permissions-Policy: geolocation=(), camera=(), microphone=(), payment=()
+  Cross-Origin-Opener-Policy: same-origin
+  Cross-Origin-Resource-Policy: same-origin
 
-/main.css
-  Content-Type: text/css; charset=utf-8
-  Cache-Control: public, max-age=31536000, immutable
-
-/main.js
-  Content-Type: application/javascript; charset=utf-8
-  Cache-Control: public, max-age=31536000, immutable
-
-/assets/*
-  Cache-Control: public, max-age=31536000, immutable
