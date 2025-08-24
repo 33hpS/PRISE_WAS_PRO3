@@ -136,10 +136,10 @@ export default function ProductManager() {
     
     try {
       // Prepare data according to Supabase schema
+      // Note: 'category' column is not present in DB, do not send it
       const productData = {
         name: formData.name,
         description: formData.description,
-        category: formData.category,
         type: formData.type,
         collection: formData.collection,
         view_type: formData.view_type,

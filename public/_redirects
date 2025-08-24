@@ -5,4 +5,4 @@
 
 # SPA fallback (only if the requested file doesn't exist)
 # This ensures client-side routing works without breaking static assets.
-/* /index.html 200
+
