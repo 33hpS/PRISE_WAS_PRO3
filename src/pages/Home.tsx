@@ -1,6 +1,6 @@
 /**
  * Home page component: main dashboard with navigation and feature panels.
- * Adds CurrencyRates widget (USD, EUR, RUB, KZT, CNY vs KGS) with caching and refresh.
+ * Contains overview metrics, quick actions, price-list and labels generators, and admin sections.
  */
 
 import { useEffect, useState } from 'react'
@@ -40,9 +40,7 @@ type DashboardTab =
   | 'history'
   | 'users'
 
-/**
- * Lightweight stats shape for overview cards
- */
+/** Lightweight stats shape for overview cards */
 interface OverviewStats {
   materials: number
   products: number
@@ -71,9 +69,7 @@ export default function Home() {
     void loadStats()
   }, [])
 
-  /**
-   * Load current user with role or redirect to login
-   */
+  /** Load current user with role or redirect to login */
   const loadUser = async () => {
     try {
       const currentUser = await getCurrentUserWithRole()
@@ -90,9 +86,7 @@ export default function Home() {
     }
   }
 
-  /**
-   * Load overview counters (resilient to missing tables)
-   */
+  /** Load overview counters (resilient to missing tables) */
   const loadStats = async () => {
     try {
       const [materialsResult, productsResult, collectionsResult, priceListsResult] = await Promise.all([
@@ -130,9 +124,7 @@ export default function Home() {
     }
   }
 
-  /**
-   * Logout handler: clears local store and redirects to login
-   */
+  /** Logout handler: clears local store and redirects to login */
   const handleLogout = async () => {
     try {
       localStorage.removeItem('test-user')
@@ -155,9 +147,7 @@ export default function Home() {
     )
   }
 
-  /**
-   * Helper: returns label for breadcrumb by active tab
-   */
+  /** Helper: returns label for breadcrumb by active tab */
   const breadcrumbLabel = (tab: DashboardTab): string => {
     switch (tab) {
       case 'overview':
@@ -244,7 +234,7 @@ export default function Home() {
           </Card>
         </div>
 
-        {/* Desktop Navigation (custom buttons, no Tabs) */}
+        {/* Desktop Navigation */}
         <div className="hidden lg:block">
           <div className="space-y-6">
             <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">

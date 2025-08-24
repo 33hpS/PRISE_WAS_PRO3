@@ -6,12 +6,13 @@ import { promisify } from 'util'
 const execAsync = promisify(exec)
 
 /**
- * Build script for the furniture factory application
- * - Outputs JS to dist/main.js
- * - Outputs CSS to dist/main.css (unified name expected by hosting)
- * - Generates dist/index.html with correct asset links (no inline CSS)
- * - Copies Cloudflare Pages redirects/headers if present
+ * Build script for the application
+ * - JS -> dist/main.js (IIFE)
+ * - CSS -> dist/main.css (Tailwind + shadcn.css)
+ * - HTML -> dist/index.html (без inline-стилей)
+ * - Copies Cloudflare Pages files: _headers, public/_redirects
  */
+
 const isProduction = process.argv.includes('--production')
 
 /** Ensure directory exists */
@@ -28,7 +29,7 @@ function ensureDir(dir) {
  */
 async function buildCSS() {
   try {
-    console.log(`🎨 Building CSS with Tailwind...`)
+    console.log(`Building CSS with Tailwind...`)
 
     const inputCSS = `@tailwind base;
 @tailwind components;
@@ -57,11 +58,11 @@ async function buildCSS() {
       }
     }
 
-    console.log('✅ CSS built successfully')
+    console.log('CSS built successfully')
   } catch (error) {
-    console.error('❌ CSS build failed:', error)
+    console.error('CSS build failed:', error)
 
-    // Fallback CSS (very small set)
+    // Fallback CSS (минимальный набор)
     let fallbackCSS = `
 /* Base styles */
 * { box-sizing: border-box; }
@@ -85,7 +86,7 @@ body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Ro
     }
     ensureDir('dist')
     writeFileSync('dist/main.css', fallbackCSS)
-    console.log('📋 Fallback CSS created')
+    console.log('Fallback CSS created')
   }
 }
 
@@ -94,7 +95,7 @@ body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Ro
  */
 async function buildJS() {
   try {
-    console.log('🔧 Building JavaScript...')
+    console.log('Building JavaScript...')
 
     await esbuild({
       entryPoints: ['src/main.tsx'],
@@ -127,9 +128,9 @@ async function buildJS() {
       treeShaking: isProduction,
     })
 
-    console.log('✅ JavaScript built successfully')
+    console.log('JavaScript built successfully')
   } catch (error) {
-    console.error('❌ JavaScript build failed:', error)
+    console.error('JavaScript build failed:', error)
     throw error
   }
 }
@@ -156,9 +157,9 @@ function cleanupTempFiles() {
   })
 }
 
-/** Generate HTML file (no inline <style>) */
+/** Generate HTML file (no inline style) */
 function generateHTML() {
-  console.log('📄 Generating HTML...')
+  console.log('Generating HTML...')
 
   const html = `<!DOCTYPE html>
 <html lang="ru">
@@ -181,26 +182,26 @@ function generateHTML() {
 </html>`
   ensureDir('dist')
   writeFileSync('dist/index.html', html)
-  console.log('✅ HTML generated successfully')
+  console.log('HTML generated successfully')
 }
 
 /** Copy static files for Cloudflare Pages */
 function copyStaticFiles() {
-  console.log('📁 Copying static files...')
+  console.log('Copying static files...')
   if (existsSync('_headers')) {
     copyFileSync('_headers', 'dist/_headers')
-    console.log('📋 Copied _headers')
+    console.log('Copied _headers')
   }
   if (existsSync('public/_redirects')) {
     copyFileSync('public/_redirects', 'dist/_redirects')
-    console.log('📋 Copied _redirects')
+    console.log('Copied _redirects')
   }
 }
 
 /** Main build function */
 async function buildApp() {
   try {
-    console.log(\`🚀 Starting \${isProduction ? 'production' : 'development'} build...\`)
+    console.log(`Starting ${isProduction ? 'production' : 'development'} build...`)
 
     ensureDir('dist')
     createReactShim()
@@ -210,9 +211,9 @@ async function buildApp() {
     copyStaticFiles()
     cleanupTempFiles()
 
-    console.log('🎉 Build completed successfully!')
+    console.log('Build completed successfully')
   } catch (error) {
-    console.error('💥 Build failed:', error)
+    console.error('Build failed:', error)
     cleanupTempFiles()
     process.exit(1)
   }
