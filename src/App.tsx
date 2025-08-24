@@ -2,6 +2,8 @@
  * Main application component with routing (react-router core only).
  * Uses MemoryRouter because HashRouter is not available in the core package.
  * Initial route is derived from location.hash to preserve hash-based deep links in preview.
+ * Additionally: we sync MemoryRouter with window.location.hash after mount
+ * by listening to `hashchange` and forcing MemoryRouter remount with a keyed state.
  */
 import { MemoryRouter, Route, Routes } from 'react-router'
 import { useEffect, useState } from 'react'
@@ -21,6 +23,7 @@ import { Toaster } from 'sonner'
 /**
  * Main App component with router configuration and authentication.
  * Добавлена поддержка локальной сессии "test-user" (без пароля) для разработки.
+ * Дополнительно: синхронизация MemoryRouter с изменениями hash (hashchange).
  */
 export default function App() {
   const [user, setUser] = useState<any>(null)
@@ -144,12 +147,23 @@ export default function App() {
 
   /**
    * Derive initial entry for MemoryRouter from hash (e.g., "#/login" -> "/login")
-   * This preserves deep links in our preview iframe while staying within react-router core.
+   * and keep it in sync with window.location.hash after mount.
+   * MemoryRouter не читает hash после инициализации, поэтому мы храним путь в состоянии
+   * и принудительно перемонтируем роутер через key.
    */
-  const initialPath =
+  const getHashPath = () =>
     typeof window !== 'undefined' && window.location?.hash
       ? window.location.hash.slice(1) || '/'
       : '/'
+
+  const [hashPath, setHashPath] = useState<string>(getHashPath())
+
+  useEffect(() => {
+    /** Handle hash changes and update state */
+    const onHashChange = () => setHashPath(getHashPath())
+    window.addEventListener('hashchange', onHashChange)
+    return () => window.removeEventListener('hashchange', onHashChange)
+  }, [])
 
   return (
     <>
@@ -159,7 +173,8 @@ export default function App() {
       {/* Глобальный Toaster для единых уведомлений */}
       <Toaster richColors position="top-right" />
 
-      <MemoryRouter initialEntries={[initialPath]}>
+      {/* MemoryRouter синхронизирован с hash через key + state */}
+      <MemoryRouter key={hashPath} initialEntries={[hashPath]}>
         {/* Индикатор синхронизации видим только во время sync */}
         <SyncStatusBar />
 

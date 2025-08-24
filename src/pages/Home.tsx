@@ -1,12 +1,14 @@
 /**
  * @file Home.tsx
- * @description Главная панель: обзор, навигация и функциональные панели.
- * Добавлена вкладка "Окраска" (PaintRecipesManager) в навигацию и контент (мобайл + десктоп).
+ * @description Домашняя страница (дашборд): метрики, быстрые действия, доступ к модулям, адаптивная навигация.
+ * Важные изменения:
+ * - Избавлены дублирующие действия: для роли manager кнопка "Просмотр данных" ведет на вкладку 'products', а не 'generator'.
+ * - Вынесена сетка быстрых действий в локальный переиспользуемый компонент QuickStartGrid (используется и на десктопе, и на мобильных).
  */
 
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router'
-import { Package, Settings, Upload, FileText, Database, Users, Eye, LogOut, PaintBucket } from 'lucide-react'
+import { Package, Settings, Upload, FileText, Database, Users, Eye, LogOut } from 'lucide-react'
 import { Button } from '../components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card'
 import { Badge } from '../components/ui/badge'
@@ -25,11 +27,9 @@ import LabelGenerator from '../components/LabelGenerator'
 import { getCurrentUserWithRole, UserWithRole } from '../lib/auth'
 import { supabase } from '../lib/supabase'
 import CurrencyRates from '../components/CurrencyRates'
-import PaintRecipesManager from '../components/PaintRecipesManager'
-import SupabaseStatus from '../components/SupabaseStatus'
 
 /**
- * Список вкладок домашней панели.
+ * Тип вкладок дашборда.
  */
 type DashboardTab =
   | 'overview'
@@ -40,12 +40,11 @@ type DashboardTab =
   | 'products'
   | 'collections'
   | 'types'
-  | 'paint'
   | 'history'
   | 'users'
 
 /**
- * Статистика для карточек обзора.
+ * Упрощённая форма статистики для карточек обзора.
  */
 interface OverviewStats {
   materials: number
@@ -55,7 +54,82 @@ interface OverviewStats {
 }
 
 /**
- * Home: главная панель управления с навигацией и защищёнными секциями.
+ * Локальный компонент: сетка быстрых действий.
+ * Переиспользуется в десктопном и мобильном блоках "Быстрый старт".
+ */
+function QuickStartGrid({
+  role,
+  onNavigate,
+}: {
+  role?: 'admin' | 'manager' | string | null
+  onNavigate: (tab: DashboardTab) => void
+}) {
+  return (
+    <div
+      className={`grid gap-4 ${
+        role === 'admin' ? 'grid-cols-1 md:grid-cols-4' : 'grid-cols-1 md:grid-cols-2'
+      }`}
+    >
+      {/* Создать прайс-лист */}
+      <Button
+        onClick={() => onNavigate('generator')}
+        variant="outline"
+        className="bg-transparent h-24 flex flex-col gap-2 bg-purple-50 hover:bg-purple-100 border-purple-200"
+      >
+        <FileText className="w-6 h-6 text-purple-600" />
+        <span className="text-purple-700">Создать прайс-лист</span>
+      </Button>
+
+      {/* Печать этикеток */}
+      <Button
+        onClick={() => onNavigate('labels')}
+        variant="outline"
+        className="bg-transparent h-24 flex flex-col gap-2 bg-orange-50 hover:bg-orange-100 border-orange-200"
+      >
+        <Package className="w-6 h-6 text-orange-600" />
+        <span className="text-orange-700">Печать этикеток</span>
+      </Button>
+
+      {/* Для менеджера: Просмотр данных теперь ведет к продукции (исключаем дублирование generator) */}
+      {role === 'manager' && (
+        <Button
+          onClick={() => onNavigate('products')}
+          variant="outline"
+          className="bg-transparent h-24 flex flex-col gap-2 bg-green-50 hover:bg-green-100 border-green-200"
+        >
+          <Eye className="w-6 h-6 text-green-600" />
+          <span className="text-green-700">Просмотр данных</span>
+        </Button>
+      )}
+
+      {/* Для администратора: Загрузка данных и Материалы */}
+      {role === 'admin' && (
+        <>
+          <Button
+            onClick={() => onNavigate('upload')}
+            variant="outline"
+            className="bg-transparent h-24 flex flex-col gap-2 bg-blue-50 hover:bg-blue-100 border-blue-200"
+          >
+            <Upload className="w-6 h-6 text-blue-600" />
+            <span className="text-blue-700">Загрузить данные</span>
+          </Button>
+
+          <Button
+            onClick={() => onNavigate('materials')}
+            variant="outline"
+            className="bg-transparent h-24 flex flex-col gap-2 bg-green-50 hover:bg-green-100 border-green-200"
+          >
+            <Database className="w-6 h-6 text-green-600" />
+            <span className="text-green-700">Управление материалами</span>
+          </Button>
+        </>
+      )}
+    </div>
+  )
+}
+
+/**
+ * Home: Главная страница-дашборд с авторизацией, метриками, быстрыми действиями и доступом к модулям.
  */
 export default function Home() {
   const [user, setUser] = useState<UserWithRole | null>(null)
@@ -76,7 +150,7 @@ export default function Home() {
   }, [])
 
   /**
-   * Загрузка текущего пользователя с ролью; при ошибке отправляем на /login.
+   * Загрузка текущего пользователя с ролью; при отсутствии — редирект на логин.
    */
   const loadUser = async () => {
     try {
@@ -95,7 +169,7 @@ export default function Home() {
   }
 
   /**
-   * Загрузка статистики по таблицам; устойчиво к отсутствующим таблицам/ошибкам.
+   * Загрузка счётчиков (устойчиво к отсутствию таблиц).
    */
   const loadStats = async () => {
     try {
@@ -135,7 +209,7 @@ export default function Home() {
   }
 
   /**
-   * Выход: чистим локальное хранилище и сессию Supabase.
+   * Выход: чистим локальные данные и выходим из Supabase.
    */
   const handleLogout = async () => {
     try {
@@ -160,7 +234,7 @@ export default function Home() {
   }
 
   /**
-   * Текст хлебных крошек для активной вкладки.
+   * Возвращает подпись для хлебных крошек по активной вкладке.
    */
   const breadcrumbLabel = (tab: DashboardTab): string => {
     switch (tab) {
@@ -180,8 +254,6 @@ export default function Home() {
         return 'Управление коллекциями'
       case 'types':
         return 'Типы продукции'
-      case 'paint':
-        return 'Рецепты окраски'
       case 'history':
         return 'История изменений'
       case 'users':
@@ -217,11 +289,6 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Supabase connection status */}
-        <div className="mb-6">
-          <SupabaseStatus compact />
-        </div>
-
         {/* Мобильная навигация (select) */}
         <div className="flex lg:hidden mb-6">
           <Card className="w-full">
@@ -245,7 +312,6 @@ export default function Home() {
                       <option value="products">📦 Продукция</option>
                       <option value="collections">📚 Коллекции</option>
                       <option value="types">⚙️ Типы</option>
-                      <option value="paint">🎨 Окраска</option>
                       <option value="history">📝 История</option>
                       <option value="users">👥 Пользователи</option>
                     </optgroup>
@@ -256,7 +322,7 @@ export default function Home() {
           </Card>
         </div>
 
-        {/* Десктоп‑навигация (кнопки) */}
+        {/* Десктопная навигация (кастомные кнопки, без Tabs) */}
         <div className="hidden lg:block">
           <div className="space-y-6">
             <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
@@ -267,7 +333,7 @@ export default function Home() {
                       <h3 className="text-sm font-semibold text-gray-600 px-3 py-2">Основные</h3>
                     </div>
 
-                    {/* Основные кнопки */}
+                    {/* Кнопки верхнего уровня */}
                     <div className="grid grid-cols-3 gap-1 p-0">
                       <button
                         onClick={() => setActiveTab('overview')}
@@ -300,7 +366,7 @@ export default function Home() {
                       </button>
                     </div>
 
-                    {/* Админ‑секция */}
+                    {/* Блок администратора */}
                     {user?.role === 'admin' && (
                       <div className="mt-4">
                         <div className="flex items-center space-x-1 mb-2 px-3">
@@ -362,16 +428,6 @@ export default function Home() {
                           </button>
 
                           <button
-                            onClick={() => setActiveTab('paint')}
-                            className={`flex items-center gap-2 px-3 py-2 rounded-lg border border-transparent hover:bg-gray-50 transition-all duration-200 ${
-                              activeTab === 'paint' ? 'bg-pink-50 text-pink-700 border-pink-200' : ''
-                            }`}
-                          >
-                            <PaintBucket className="w-4 h-4" />
-                            <span className="text-sm font-medium">Окраска</span>
-                          </button>
-
-                          <button
                             onClick={() => setActiveTab('history')}
                             className={`flex items-center gap-2 px-3 py-2 rounded-lg border border-transparent hover:bg-gray-50 transition-all duration-200 ${
                               activeTab === 'history' ? 'bg-gray-50 text-gray-700 border-gray-200' : ''
@@ -407,11 +463,11 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Контент под вкладки (десктоп) */}
+            {/* Контент (desktop) */}
             <div className="space-y-6">
               {activeTab === 'overview' && (
                 <div className="space-y-6">
-                  {/* Карточки метрик */}
+                  {/* Метрики */}
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                     <Card className="bg-white border border-gray-200">
                       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -469,7 +525,7 @@ export default function Home() {
                   {/* Курсы валют */}
                   <CurrencyRates />
 
-                  {/* Быстрый старт */}
+                  {/* Быстрый старт — общая сетка */}
                   <Card className="bg-white border border-gray-200">
                     <CardHeader>
                       <CardTitle className="flex items-center gap-2">
@@ -479,62 +535,7 @@ export default function Home() {
                       <CardDescription>Основные действия для работы с системой</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                      <div
-                        className={`grid gap-4 ${
-                          user?.role === 'admin' ? 'grid-cols-1 md:grid-cols-4' : 'grid-cols-1 md:grid-cols-2'
-                        }`}
-                      >
-                        <Button
-                          onClick={() => setActiveTab('generator')}
-                          variant="outline"
-                          className="bg-transparent h-24 flex flex-col gap-2 bg-purple-50 hover:bg-purple-100 border-purple-200"
-                        >
-                          <FileText className="w-6 h-6 text-purple-600" />
-                          <span className="text-purple-700">Создать прайс-лист</span>
-                        </Button>
-
-                        <Button
-                          onClick={() => setActiveTab('labels')}
-                          variant="outline"
-                          className="bg-transparent h-24 flex flex-col gap-2 bg-orange-50 hover:bg-orange-100 border-orange-200"
-                        >
-                          <Package className="w-6 h-6 text-orange-600" />
-                          <span className="text-orange-700">Печать этикеток</span>
-                        </Button>
-
-                        {user?.role === 'manager' && (
-                          <Button
-                            onClick={() => setActiveTab('generator')}
-                            variant="outline"
-                            className="bg-transparent h-24 flex flex-col gap-2 bg-green-50 hover:bg-green-100 border-green-200"
-                          >
-                            <Eye className="w-6 h-6 text-green-600" />
-                            <span className="text-green-700">Просмотр данных</span>
-                          </Button>
-                        )}
-
-                        {user?.role === 'admin' && (
-                          <>
-                            <Button
-                              onClick={() => setActiveTab('upload')}
-                              variant="outline"
-                              className="bg-transparent h-24 flex flex-col gap-2 bg-blue-50 hover:bg-blue-100 border-blue-200"
-                            >
-                              <Upload className="w-6 h-6 text-blue-600" />
-                              <span className="text-blue-700">Загрузить данные</span>
-                            </Button>
-
-                            <Button
-                              onClick={() => setActiveTab('materials')}
-                              variant="outline"
-                              className="bg-transparent h-24 flex flex-col gap-2 bg-green-50 hover:bg-green-100 border-green-200"
-                            >
-                              <Database className="w-6 h-6 text-green-600" />
-                              <span className="text-green-700">Управление материалами</span>
-                            </Button>
-                          </>
-                        )}
-                      </div>
+                      <QuickActionsPanel items={getQuickActions(user?.role, setActiveTab)} />
                     </CardContent>
                   </Card>
                 </div>
@@ -630,21 +631,6 @@ export default function Home() {
                 </div>
               )}
 
-              {activeTab === 'paint' && (
-                <Card className="bg-white border border-gray-200">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <PaintBucket className="w-5 h-5" />
-                      Рецепты окраски
-                    </CardTitle>
-                    <CardDescription>Список и добавление рецептов окраски (Supabase → LocalStorage фолбэк)</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <PaintRecipesManager />
-                  </CardContent>
-                </Card>
-              )}
-
               {activeTab === 'history' && (
                 <Card className="bg-white border border-gray-200">
                   <CardHeader>
@@ -720,7 +706,7 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Контент под вкладки (мобайл) */}
+          {/* Контент (mobile) */}
           <div className="space-y-6">
             {activeTab === 'overview' && (
               <div className="space-y-6">
@@ -778,7 +764,7 @@ export default function Home() {
                   </Card>
                 </div>
 
-                {/* Курсы валют (мобайл) */}
+                {/* Курсы валют (mobile) */}
                 <CurrencyRates />
 
                 <Card className="bg-white border border-gray-200">
@@ -790,62 +776,7 @@ export default function Home() {
                     <CardDescription>Основные действия для работы с системой</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    <div
-                      className={`grid gap-4 ${
-                        user?.role === 'admin' ? 'grid-cols-1 md:grid-cols-4' : 'grid-cols-1 md:grid-cols-2'
-                      }`}
-                    >
-                      <Button
-                        onClick={() => setActiveTab('generator')}
-                        variant="outline"
-                        className="bg-transparent h-24 flex flex-col gap-2 bg-purple-50 hover:bg-purple-100 border-purple-200"
-                      >
-                        <FileText className="w-6 h-6 text-purple-600" />
-                        <span className="text-purple-700">Создать прайс-лист</span>
-                      </Button>
-
-                      <Button
-                        onClick={() => setActiveTab('labels')}
-                        variant="outline"
-                        className="bg-transparent h-24 flex flex-col gap-2 bg-orange-50 hover:bg-orange-100 border-orange-200"
-                      >
-                        <Package className="w-6 h-6 text-orange-600" />
-                        <span className="text-orange-700">Печать этикеток</span>
-                      </Button>
-
-                      {user?.role === 'manager' && (
-                        <Button
-                          onClick={() => setActiveTab('generator')}
-                          variant="outline"
-                          className="bg-transparent h-24 flex flex-col gap-2 bg-green-50 hover:bg-green-100 border-green-200"
-                        >
-                          <Eye className="w-6 h-6 text-green-600" />
-                          <span className="text-green-700">Просмотр данных</span>
-                        </Button>
-                      )}
-
-                      {user?.role === 'admin' && (
-                        <>
-                          <Button
-                            onClick={() => setActiveTab('upload')}
-                            variant="outline"
-                            className="bg-transparent h-24 flex фlex-col gap-2 bg-blue-50 hover:bg-blue-100 border-blue-200"
-                          >
-                            <Upload className="w-6 h-6 text-blue-600" />
-                            <span className="text-blue-700">Загрузить данные</span>
-                          </Button>
-
-                          <Button
-                            onClick={() => setActiveTab('materials')}
-                            variant="outline"
-                            className="bg-transparent h-24 flex flex-col gap-2 bg-green-50 hover:bg-green-100 border-green-200"
-                          >
-                            <Database className="w-6 h-6 text-green-600" />
-                            <span className="text-green-700">Управление материалами</span>
-                          </Button>
-                        </>
-                      )}
-                    </div>
+                    <QuickActionsPanel items={getQuickActions(user?.role, setActiveTab)} />
                   </CardContent>
                 </Card>
               </div>
@@ -939,21 +870,6 @@ export default function Home() {
                   </CardContent>
                 </Card>
               </div>
-            )}
-
-            {activeTab === 'paint' && (
-              <Card className="bg-white border border-gray-200">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <PaintBucket className="w-5 h-5" />
-                    Рецепты окраски
-                  </CardTitle>
-                  <CardDescription>Список и добавление рецептов окраски (Supabase → LocalStorage фолбэк)</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <PaintRecipesManager />
-                </CardContent>
-              </Card>
             )}
 
             {activeTab === 'history' && (

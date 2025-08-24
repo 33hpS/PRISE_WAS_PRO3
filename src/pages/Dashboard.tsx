@@ -26,6 +26,7 @@ import CurrencyRates from '../components/CurrencyRates'
 import MetricCard from '../components/common/MetricCard'
 import TabNav, { TabItem } from '../components/navigation/TabNav'
 import SupabaseStatus from '../components/SupabaseStatus'
+import QuickActionsPanel, { type QuickActionItem } from '../components/home/QuickActionsPanel'
 
 // Новые менеджеры из макета
 import PaintRecipesManager from '../components/PaintRecipesManager'
@@ -282,45 +283,47 @@ export default function DashboardPage(): JSX.Element {
                   <CardDescription>Основные действия для начала работы</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid gap-3 grid-cols-1 sm:grid-cols-3">
-                    <Button
-                      onClick={() => setActiveTab('generator')}
-                      variant="outline"
-                      className="bg-transparent h-24 flex flex-col gap-2 bg-purple-50 hover:bg-purple-100 border-purple-200"
-                    >
-                      <FileText className="w-6 h-6 text-purple-600" />
-                      <span className="text-purple-700">Создать прайс-лист</span>
-                    </Button>
-
-                    <Button
-                      onClick={() => setActiveTab('labels')}
-                      variant="outline"
-                      className="bg-transparent h-24 flex flex-col gap-2 bg-orange-50 hover:bg-orange-100 border-orange-200"
-                    >
-                      <Package className="w-6 h-6 text-orange-600" />
-                      <span className="text-orange-700">Печать этикеток</span>
-                    </Button>
-
-                    {user?.role === 'admin' ? (
-                      <Button
-                        onClick={() => setActiveTab('upload')}
-                        variant="outline"
-                        className="bg-transparent h-24 flex flex-col gap-2 bg-blue-50 hover:bg-blue-100 border-blue-200"
-                      >
-                        <Upload className="w-6 h-6 text-blue-600" />
-                        <span className="text-blue-700">Загрузить данные</span>
-                      </Button>
-                    ) : (
-                      <Button
-                        onClick={() => setActiveTab('generator')}
-                        variant="outline"
-                        className="bg-transparent h-24 flex flex-col gap-2 bg-green-50 hover:bg-green-100 border-green-200"
-                      >
-                        <Eye className="w-6 h-6 text-green-600" />
-                        <span className="text-green-700">Просмотр данных</span>
-                      </Button>
-                    )}
-                  </div>
+                  <QuickActionsPanel
+                    items={
+                      [
+                        {
+                          label: 'Создать прайс-лист',
+                          icon: <FileText className="w-6 h-6 text-purple-600" />,
+                          onClick: () => setActiveTab('generator'),
+                          accentClass: 'border-purple-200 bg-purple-50 text-purple-700',
+                        },
+                        {
+                          label: 'Печать этикеток',
+                          icon: <Package className="w-6 h-6 text-orange-600" />,
+                          onClick: () => setActiveTab('labels'),
+                          accentClass: 'border-orange-200 bg-orange-50 text-orange-700',
+                        },
+                        ...(user?.role === 'admin'
+                          ? [
+                              {
+                                label: 'Загрузить данные',
+                                icon: <Upload className="w-6 h-6 text-blue-600" />,
+                                onClick: () => setActiveTab('upload'),
+                                accentClass: 'border-blue-200 bg-blue-50 text-blue-700',
+                              },
+                              {
+                                label: 'Управление материалами',
+                                icon: <Database className="w-6 h-6 text-green-600" />,
+                                onClick: () => setActiveTab('materials'),
+                                accentClass: 'border-green-200 bg-green-50 text-green-700',
+                              },
+                            ]
+                          : [
+                              {
+                                label: 'Просмотр данных',
+                                icon: <Eye className="w-6 h-6 text-green-600" />,
+                                onClick: () => setActiveTab('products'),
+                                accentClass: 'border-green-200 bg-green-50 text-green-700',
+                              },
+                            ])
+                      ] as QuickActionItem[]
+                    }
+                  />
                 </CardContent>
               </Card>
             </div>

@@ -1,10 +1,11 @@
 /**
  * @file Header.tsx
- * @description Универсальный заголовок приложения: логотип, навигация (hash‑links), кнопка выхода.
- * Использует централизованный брендинг (src/config/branding.ts).
+ * @description Универсальный заголовок: логотип, навигация с программным переходом (react-router), выход.
+ * Навигация использует useNavigate/useLocation для корректной SPA-навигации и активной подсветки.
  */
 
 import React from 'react'
+import { useNavigate, useLocation } from 'react-router'
 import { Button } from './ui/button'
 import { Card } from './ui/card'
 import { LogOut, Home as HomeIcon, FileText, Package, Settings, Database, User } from 'lucide-react'
@@ -26,16 +27,46 @@ interface HeaderProps {
 }
 
 /**
+ * generateNavClass: вернуть классы с учётом активной ссылки
+ * @param active - выбран ли пункт меню
+ */
+function generateNavClass(active: boolean): string {
+  return [
+    'inline-flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-md border transition-colors',
+    active ? 'bg-blue-50 text-blue-700 border-blue-200' : 'text-gray-700 hover:bg-gray-50 border-gray-200',
+    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2',
+  ].join(' ')
+}
+
+/**
  * Header: верхняя панель приложения с логотипом, навигацией и выходом.
- * Навигация через hash‑ссылки, чтобы не зависеть от контекста роутера.
+ * - Программная навигация через useNavigate гарантирует корректный контекст роутера.
+ * - Активная подсветка строится по location.pathname.
  */
 export default function Header({ user, onLogout }: HeaderProps): JSX.Element {
+  const navigate = useNavigate()
+  const location = useLocation()
+
+  /** Обработчик клика по пункту меню */
+  const go = (to: string) => (e: React.MouseEvent) => {
+    e.preventDefault()
+    navigate(to)
+  }
+
+  const pathname = location?.pathname || '/'
+
   return (
     <header className="bg-white border-b border-gray-200 sticky top-0 z-40">
       <div className="container mx-auto px-4">
         <div className="h-14 flex items-center justify-between gap-4">
           {/* Бренд */}
-          <a href="#/" className="flex items-center gap-2 group" aria-label="На главную">
+          <a
+            href="#/"
+            onClick={go('/')}
+            className="flex items-center gap-2 group"
+            aria-label="На главную"
+            title="Главная"
+          >
             <img
               src={LOGO_URL}
               alt={`${BRAND.name} logo`}
@@ -49,18 +80,15 @@ export default function Header({ user, onLogout }: HeaderProps): JSX.Element {
 
           {/* Навигация (основные разделы) */}
           <nav className="hidden md:flex items-center gap-2">
-            <a
-              href="#/"
-              className="inline-flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-md hover:bg-gray-50 text-gray-700 border"
-              title="Главная"
-            >
+            <a href="#/" onClick={go('/')} className={generateNavClass(pathname === '/')} title="Главная">
               <HomeIcon className="w-4 h-4" />
               <span>Главная</span>
             </a>
 
             <a
               href="#/products"
-              className="inline-flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-md hover:bg-gray-50 text-gray-700 border"
+              onClick={go('/products')}
+              className={generateNavClass(pathname === '/products')}
               title="Продукция"
             >
               <Package className="w-4 h-4" />
@@ -69,7 +97,8 @@ export default function Header({ user, onLogout }: HeaderProps): JSX.Element {
 
             <a
               href="#/materials"
-              className="inline-flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-md hover:bg-gray-50 text-gray-700 border"
+              onClick={go('/materials')}
+              className={generateNavClass(pathname === '/materials')}
               title="Материалы"
             >
               <Database className="w-4 h-4" />
@@ -78,7 +107,8 @@ export default function Header({ user, onLogout }: HeaderProps): JSX.Element {
 
             <a
               href="#/collections"
-              className="inline-flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-md hover:bg-gray-50 text-gray-700 border"
+              onClick={go('/collections')}
+              className={generateNavClass(pathname === '/collections')}
               title="Коллекции"
             >
               <Settings className="w-4 h-4" />
@@ -87,7 +117,8 @@ export default function Header({ user, onLogout }: HeaderProps): JSX.Element {
 
             <a
               href="#/dashboard"
-              className="inline-flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-md hover:bg-gray-50 text-gray-700 border"
+              onClick={go('/dashboard')}
+              className={generateNavClass(pathname === '/dashboard')}
               title="Панель"
             >
               <FileText className="w-4 h-4" />
