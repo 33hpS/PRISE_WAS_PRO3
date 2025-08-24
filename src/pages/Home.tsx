@@ -26,6 +26,7 @@ import { getCurrentUserWithRole, UserWithRole } from '../lib/auth'
 import { supabase } from '../lib/supabase'
 import CurrencyRates from '../components/CurrencyRates'
 import PaintRecipesManager from '../components/PaintRecipesManager'
+import SupabaseStatus from '../components/SupabaseStatus'
 
 /**
  * Список вкладок домашней панели.
@@ -214,6 +215,11 @@ export default function Home() {
               </Button>
             </div>
           </div>
+        </div>
+
+        {/* Supabase connection status */}
+        <div className="mb-6">
+          <SupabaseStatus compact />
         </div>
 
         {/* Мобильная навигация (select) */}

@@ -1,14 +1,8 @@
-# Cloudflare Pages SPA fallback
-# Static assets are served as-is. Everything else falls back to index.html.
+# Serve static files as-is (implicit in Pages, left for clarity)
+/main.css   /main.css   200
+/main.js    /main.js    200
+/assets/*   /assets/:splat  200
 
-# Fallback all routes to index.html (200)
-# Cloudflare will prefer existing files (JS/CSS/images) automatically.
-# Docs: https://developers.cloudflare.com/pages/configuration/redirects/
-# This avoids returning HTML for existing assets and fixes MIME issues.
-# 
-# Example:
-#   /app/products/123  -> /index.html 200
-#   /main.js           -> served as /main.js (if exists)
-#   /main.css          -> served as /main.css (if exists)
-#
-/*    /index.html   200
+# SPA fallback (only if the requested file doesn't exist)
+# This ensures client-side routing works without breaking static assets.
+/* /index.html 200

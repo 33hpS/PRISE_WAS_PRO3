@@ -508,7 +508,7 @@ export default function ProductManager() {
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <Label htmlFor="total_cost">Себестоимость (руб.)</Label>
+                      <Label htmlFor="total_cost">Себестоимость (сом)</Label>
                       <Input
                         id="total_cost"
                         type="number"
@@ -532,7 +532,7 @@ export default function ProductManager() {
                       )}
                     </div>
                     <div>
-                      <Label htmlFor="markup">Наценка (руб.)</Label>
+                      <Label htmlFor="markup">Наценка (сом)</Label>
                       <Input
                         id="markup"
                         type="number"
@@ -557,7 +557,7 @@ export default function ProductManager() {
                   </div>
                   
                   <div>
-                    <Label htmlFor="base_price">Итоговая цена (руб.)</Label>
+                    <Label htmlFor="base_price">Итоговая цена (сом)</Label>
                     <Input
                       id="base_price"
                       type="number"
@@ -632,7 +632,7 @@ export default function ProductManager() {
                         <div>
                           <span className="font-medium">Рекомендуемая цена:</span>
                           <p className="text-green-600 font-semibold">
-                            {Math.round(formData.total_cost * 1.5).toLocaleString('ru-RU')} руб.
+                            {Math.round(formData.total_cost * 1.5).toLocaleString('ru-RU')} сом
                           </p>
                         </div>
                       </div>

@@ -25,6 +25,7 @@ import { supabase } from '../lib/supabase'
 import CurrencyRates from '../components/CurrencyRates'
 import MetricCard from '../components/common/MetricCard'
 import TabNav, { TabItem } from '../components/navigation/TabNav'
+import SupabaseStatus from '../components/SupabaseStatus'
 
 // Новые менеджеры из макета
 import PaintRecipesManager from '../components/PaintRecipesManager'
@@ -574,6 +575,11 @@ export default function DashboardPage(): JSX.Element {
               <span>Выйти</span>
             </Button>
           </div>
+        </div>
+
+        {/* Индикатор Supabase */}
+        <div className="mb-4">
+          <SupabaseStatus compact />
         </div>
 
         {/* Вкладки */}

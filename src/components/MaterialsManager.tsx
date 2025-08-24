@@ -84,7 +84,7 @@ export default function MaterialsManager() {
     try {
       const { data, error } = await supabase
         .from('materials')
-        .select('id, name, article, type, unit, price, created_at, updated_at')
+        .select('*')
         .order('name')
 
       if (error) throw error
@@ -103,11 +103,26 @@ export default function MaterialsManager() {
     e.preventDefault()
     try {
       if (editingMaterial) {
-        const { error } = await supabase.from('materials').update(formData).eq('id', editingMaterial.id)
-        if (error) throw error
+        // Первая попытка: с type (если есть в форме)
+        let { error } = await supabase.from('materials').update(formData).eq('id', editingMaterial.id)
+        // Если в схеме нет колонки type — повторим без неё
+        if (error && /type/i.test(error.message || '')) {
+          const { type, ...safe } = formData as any
+          const retry = await supabase.from('materials').update(safe).eq('id', editingMaterial.id)
+          if (retry.error) throw retry.error
+        } else if (error) {
+          throw error
+        }
       } else {
-        const { error } = await supabase.from('materials').insert([formData], { returning: 'minimal' as const })
-        if (error) throw error
+        // Первая попытка: с type
+        let { error } = await supabase.from('materials').insert([formData], { returning: 'minimal' as const })
+        if (error && /type/i.test(error.message || '')) {
+          const { type, ...safe } = formData as any
+          const retry = await supabase.from('materials').insert([safe], { returning: 'minimal' as const })
+          if (retry.error) throw retry.error
+        } else if (error) {
+          throw error
+        }
       }
 
       await loadMaterials()
@@ -215,6 +230,7 @@ export default function MaterialsManager() {
     const materialsToInsert = importedMaterials.map((material, index) => ({
       name: material.name,
       article: material.article || `IMP-${Date.now()}-${String(index + 1).padStart(3, '0')}`,
+      // type может отсутствовать в БД — будем пытаться добавить, при ошибке удалим это поле и повторим
       type: material.category || 'Прочие материалы',
       unit: material.unit || 'шт',
       price: material.price || 0,
@@ -234,8 +250,16 @@ export default function MaterialsManager() {
         const chunk = materialsToInsert.slice(i, i + BATCH_SIZE)
 
         try {
-          const { error } = await supabase.from('materials').insert(chunk, { returning: 'minimal' as const })
-          if (error) {
+          // Первая попытка — с type
+          let { error } = await supabase.from('materials').insert(chunk, { returning: 'minimal' as const })
+          if (error && /type/i.test(error.message || '')) {
+            // Если колонка type отсутствует — повторяем вставку без неё
+            const chunkSafe = chunk.map(({ type, ...rest }) => rest)
+            const retry = await supabase.from('materials').insert(chunkSafe as any[], { returning: 'minimal' as const })
+            if (retry.error) {
+              throw new Error(retry.error.message || 'Ошибка вставки данных (повтор без type)')
+            }
+          } else if (error) {
             throw new Error(error.message || 'Ошибка вставки данных')
           }
         } catch (err: any) {
@@ -398,7 +422,7 @@ export default function MaterialsManager() {
                             <th className="p-2 text-left">Наименование</th>
                             <th className="p-2 text-left">Категория</th>
                             <th className="p-2 text-left">Единица</th>
-                            <th className="p-2 text-left">Цена</th>
+                            <th className="p-2 text-left">Цена (сом)</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -408,7 +432,7 @@ export default function MaterialsManager() {
                               <td className="p-2 font-medium">{material.name}</td>
                               <td className="p-2 text-gray-600">{material.category}</td>
                               <td className="p-2">{material.unit}</td>
-                              <td className="p-2">{material.price.toFixed(2)} руб.</td>
+                              <td className="p-2">{material.price.toFixed(2)} сом</td>
                             </tr>
                           ))}
                         </tbody>
@@ -547,9 +571,9 @@ export default function MaterialsManager() {
                 <div className="flex items-center justify-between">
                   <div className="flex-1">
                     <h3 className="font-semibold text-lg">{material.name}</h3>
-                    <p className="text-sm text-gray-600">Артикул: {material.article || '—'} | Тип: {material.type}</p>
+                    <p className="text-sm text-gray-600">Артикул: {material.article || '—'} | Тип: {material.type || '—'}</p>
                     <p className="text-sm text-gray-600">
-                      Цена: {material.price} руб./{material.unit}
+                      Цена: {material.price} сом/{material.unit}
                     </p>
                   </div>
                   <div className="flex gap-2">
