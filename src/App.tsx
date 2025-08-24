@@ -1,12 +1,9 @@
 /**
- * Main application component with routing (react-router core only).
- * Uses MemoryRouter because HashRouter is not available in the core package.
- * Initial route is derived from location.hash to preserve hash-based deep links in preview.
- * Additionally: we sync MemoryRouter with window.location.hash after mount
- * by listening to `hashchange` and forcing MemoryRouter remount with a keyed state.
+ * Main application component with routing
+ * ИСПРАВЛЕНО: добавлен явный импорт React + использование react-router-dom
  */
-import { MemoryRouter, Route, Routes } from 'react-router'
-import { useEffect, useState } from 'react'
+import React, { useEffect, useState } from 'react'
+import { BrowserRouter as Router, Route, Routes } from 'react-router-dom'
 import Home from './pages/Home'
 import Login from './pages/Login'
 import Collections from './pages/Collections'
@@ -14,8 +11,8 @@ import Materials from './pages/Materials'
 import Products from './pages/Products'
 import Journal from './pages/Journal'
 import About from './pages/About'
-import { getCurrentUser, supabase } from './lib/supabase'
 import Dashboard from './pages/Dashboard'
+import { getCurrentUser, supabase } from './lib/supabase'
 import HeadManager from './components/HeadManager'
 import SyncStatusBar from './components/SyncStatusBar'
 import { Toaster } from 'sonner'
@@ -23,11 +20,11 @@ import { Toaster } from 'sonner'
 /**
  * Main App component with router configuration and authentication.
  * Добавлена поддержка локальной сессии "test-user" (без пароля) для разработки.
- * Дополнительно: синхронизация MemoryRouter с изменениями hash (hashchange).
  */
 export default function App() {
   const [user, setUser] = useState<any>(null)
   const [loading, setLoading] = useState<boolean>(true)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     // Инициализация проверки
@@ -42,6 +39,9 @@ export default function App() {
           } else if (event === 'SIGNED_OUT') {
             setUser(null)
           }
+        } catch (err) {
+          console.error('Auth state change error:', err)
+          setError('Ошибка аутентификации')
         } finally {
           setLoading(false)
         }
@@ -75,7 +75,6 @@ export default function App() {
               setLoading(false)
               return
             }
-            // Просрочено — очистим
             localStorage.removeItem('test-user')
           }
         } catch {
@@ -123,72 +122,80 @@ export default function App() {
           setLoading(false)
           return
         }
-      } catch {
-        // ignore
+      } catch (authError) {
+        console.warn('Supabase auth check failed:', authError)
+        // Не останавливаем загрузку на ошибке Supabase, продолжаем без авторизации
       }
 
       // Нет активных сессий
       setUser(null)
     } catch (error) {
       console.error('Ошибка проверки пользователя:', error)
+      setError('Ошибка при проверке авторизации')
       setUser(null)
     } finally {
       setLoading(false)
     }
   }
 
+  // Loading state
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-lg text-gray-600">Загрузка...</div>
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <div className="text-lg text-gray-600">Загрузка...</div>
+        </div>
       </div>
     )
   }
 
-  /**
-   * Derive initial entry for MemoryRouter from hash (e.g., "#/login" -> "/login")
-   * and keep it in sync with window.location.hash after mount.
-   * MemoryRouter не читает hash после инициализации, поэтому мы храним путь в состоянии
-   * и принудительно перемонтируем роутер через key.
-   */
-  const getHashPath = () =>
-    typeof window !== 'undefined' && window.location?.hash
-      ? window.location.hash.slice(1) || '/'
-      : '/'
+  // Error state
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center max-w-md mx-auto p-6">
+          <div className="text-red-600 text-lg font-semibold mb-2">Ошибка загрузки</div>
+          <div className="text-gray-600 mb-4">{error}</div>
+          <button 
+            onClick={() => {
+              setError(null)
+              setLoading(true)
+              checkUser()
+            }}
+            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+          >
+            Попробовать снова
+          </button>
+        </div>
+      </div>
+    )
+  }
 
-  const [hashPath, setHashPath] = useState<string>(getHashPath())
+  // Not authenticated - show login
+  if (!user) {
+    return <Login onLogin={checkUser} />
+  }
 
-  useEffect(() => {
-    /** Handle hash changes and update state */
-    const onHashChange = () => setHashPath(getHashPath())
-    window.addEventListener('hashchange', onHashChange)
-    return () => window.removeEventListener('hashchange', onHashChange)
-  }, [])
-
+  // Main application with routing
   return (
-    <>
-      {/* Глобальное управление head (title, lang, favicon) */}
-      <HeadManager />
-
-      {/* Глобальный Toaster для единых уведомлений */}
-      <Toaster richColors position="top-right" />
-
-      {/* MemoryRouter синхронизирован с hash через key + state */}
-      <MemoryRouter key={hashPath} initialEntries={[hashPath]}>
-        {/* Индикатор синхронизации видим только во время sync */}
+    <Router>
+      <div className="min-h-screen bg-gray-50">
+        <HeadManager />
         <SyncStatusBar />
-
+        <Toaster position="top-right" />
+        
         <Routes>
-          <Route path="/login" element={<Login />} />
-          <Route path="/collections" element={user ? <Collections /> : <Login />} />
-          <Route path="/materials" element={user ? <Materials /> : <Login />} />
-          <Route path="/products" element={user ? <Products /> : <Login />} />
-          <Route path="/journal" element={user ? <Journal /> : <Login />} />
-          <Route path="/about" element={user ? <About /> : <Login />} />
-          <Route path="/dashboard" element={user ? <Dashboard /> : <Login />} />
-          <Route path="/" element={user ? <Home /> : <Login />} />
+          <Route path="/" element={<Home />} />
+          <Route path="/login" element={<Login onLogin={checkUser} />} />
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/collections" element={<Collections />} />
+          <Route path="/materials" element={<Materials />} />
+          <Route path="/products" element={<Products />} />
+          <Route path="/journal" element={<Journal />} />
+          <Route path="/about" element={<About />} />
         </Routes>
-      </MemoryRouter>
-    </>
+      </div>
+    </Router>
   )
 }

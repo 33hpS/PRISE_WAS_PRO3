@@ -1,13 +1,13 @@
 /**
- * @file Home.tsx
- * @description Домашняя страница (дашборд): метрики, быстрые действия, доступ к модулям, адаптивная навигация.
- * Важные изменения:
- * - Избавлены дублирующие действия: для роли manager кнопка "Просмотр данных" ведет на вкладку 'products', а не 'generator'.
- * - Вынесена сетка быстрых действий в локальный переиспользуемый компонент QuickStartGrid (используется и на десктопе, и на мобильных).
+ * Home page component: main dashboard with navigation and feature panels.
+ * Adds CurrencyRates widget (USD, EUR, RUB, KZT, CNY vs KGS) with caching and refresh.
+ * Notes:
+ * - Uses react-router-dom's useNavigate to match BrowserRouter in App.tsx (prevents React #310)
+ * - No external CDN injections (Tailwind built locally)
  */
 
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router'
+import { useNavigate } from 'react-router-dom'
 import { Package, Settings, Upload, FileText, Database, Users, Eye, LogOut } from 'lucide-react'
 import { Button } from '../components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card'
@@ -24,12 +24,12 @@ import TechCardHistory from '../components/TechCardHistory'
 import UserManagement from '../components/UserManagement'
 import RoleGuard from '../components/RoleGuard'
 import LabelGenerator from '../components/LabelGenerator'
-import { getCurrentUserWithRole, UserWithRole } from '../lib/auth'
+import { getCurrentUserWithRole, type UserWithRole } from '../lib/auth'
 import { supabase } from '../lib/supabase'
 import CurrencyRates from '../components/CurrencyRates'
 
 /**
- * Тип вкладок дашборда.
+ * Tabs available in the dashboard
  */
 type DashboardTab =
   | 'overview'
@@ -44,7 +44,7 @@ type DashboardTab =
   | 'users'
 
 /**
- * Упрощённая форма статистики для карточек обзора.
+ * Lightweight stats shape for overview cards
  */
 interface OverviewStats {
   materials: number
@@ -54,82 +54,7 @@ interface OverviewStats {
 }
 
 /**
- * Локальный компонент: сетка быстрых действий.
- * Переиспользуется в десктопном и мобильном блоках "Быстрый старт".
- */
-function QuickStartGrid({
-  role,
-  onNavigate,
-}: {
-  role?: 'admin' | 'manager' | string | null
-  onNavigate: (tab: DashboardTab) => void
-}) {
-  return (
-    <div
-      className={`grid gap-4 ${
-        role === 'admin' ? 'grid-cols-1 md:grid-cols-4' : 'grid-cols-1 md:grid-cols-2'
-      }`}
-    >
-      {/* Создать прайс-лист */}
-      <Button
-        onClick={() => onNavigate('generator')}
-        variant="outline"
-        className="bg-transparent h-24 flex flex-col gap-2 bg-purple-50 hover:bg-purple-100 border-purple-200"
-      >
-        <FileText className="w-6 h-6 text-purple-600" />
-        <span className="text-purple-700">Создать прайс-лист</span>
-      </Button>
-
-      {/* Печать этикеток */}
-      <Button
-        onClick={() => onNavigate('labels')}
-        variant="outline"
-        className="bg-transparent h-24 flex flex-col gap-2 bg-orange-50 hover:bg-orange-100 border-orange-200"
-      >
-        <Package className="w-6 h-6 text-orange-600" />
-        <span className="text-orange-700">Печать этикеток</span>
-      </Button>
-
-      {/* Для менеджера: Просмотр данных теперь ведет к продукции (исключаем дублирование generator) */}
-      {role === 'manager' && (
-        <Button
-          onClick={() => onNavigate('products')}
-          variant="outline"
-          className="bg-transparent h-24 flex flex-col gap-2 bg-green-50 hover:bg-green-100 border-green-200"
-        >
-          <Eye className="w-6 h-6 text-green-600" />
-          <span className="text-green-700">Просмотр данных</span>
-        </Button>
-      )}
-
-      {/* Для администратора: Загрузка данных и Материалы */}
-      {role === 'admin' && (
-        <>
-          <Button
-            onClick={() => onNavigate('upload')}
-            variant="outline"
-            className="bg-transparent h-24 flex flex-col gap-2 bg-blue-50 hover:bg-blue-100 border-blue-200"
-          >
-            <Upload className="w-6 h-6 text-blue-600" />
-            <span className="text-blue-700">Загрузить данные</span>
-          </Button>
-
-          <Button
-            onClick={() => onNavigate('materials')}
-            variant="outline"
-            className="bg-transparent h-24 flex flex-col gap-2 bg-green-50 hover:bg-green-100 border-green-200"
-          >
-            <Database className="w-6 h-6 text-green-600" />
-            <span className="text-green-700">Управление материалами</span>
-          </Button>
-        </>
-      )}
-    </div>
-  )
-}
-
-/**
- * Home: Главная страница-дашборд с авторизацией, метриками, быстрыми действиями и доступом к модулям.
+ * Home: Main dashboard with navigation, auth-protected content and feature panels.
  */
 export default function Home() {
   const [user, setUser] = useState<UserWithRole | null>(null)
@@ -150,7 +75,7 @@ export default function Home() {
   }, [])
 
   /**
-   * Загрузка текущего пользователя с ролью; при отсутствии — редирект на логин.
+   * Load current user with role or redirect to login
    */
   const loadUser = async () => {
     try {
@@ -169,7 +94,7 @@ export default function Home() {
   }
 
   /**
-   * Загрузка счётчиков (устойчиво к отсутствию таблиц).
+   * Load overview counters (resilient to missing tables)
    */
   const loadStats = async () => {
     try {
@@ -209,7 +134,7 @@ export default function Home() {
   }
 
   /**
-   * Выход: чистим локальные данные и выходим из Supabase.
+   * Logout handler: clears local store and redirects to login
    */
   const handleLogout = async () => {
     try {
@@ -234,7 +159,7 @@ export default function Home() {
   }
 
   /**
-   * Возвращает подпись для хлебных крошек по активной вкладке.
+   * Helper: returns label for breadcrumb by active tab
    */
   const breadcrumbLabel = (tab: DashboardTab): string => {
     switch (tab) {
@@ -268,7 +193,7 @@ export default function Home() {
       <Header user={user} onLogout={handleLogout} />
 
       <main className="container mx-auto px-4 py-8">
-        {/* Заголовок + мобильная кнопка выхода */}
+        {/* Title area + mobile logout */}
         <div className="mb-8">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
@@ -289,7 +214,7 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Мобильная навигация (select) */}
+        {/* Mobile Navigation (select) */}
         <div className="flex lg:hidden mb-6">
           <Card className="w-full">
             <CardContent className="p-3">
@@ -322,7 +247,7 @@ export default function Home() {
           </Card>
         </div>
 
-        {/* Десктопная навигация (кастомные кнопки, без Tabs) */}
+        {/* Desktop Navigation (custom buttons, no Tabs) */}
         <div className="hidden lg:block">
           <div className="space-y-6">
             <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
@@ -333,7 +258,7 @@ export default function Home() {
                       <h3 className="text-sm font-semibold text-gray-600 px-3 py-2">Основные</h3>
                     </div>
 
-                    {/* Кнопки верхнего уровня */}
+                    {/* Main buttons */}
                     <div className="grid grid-cols-3 gap-1 p-0">
                       <button
                         onClick={() => setActiveTab('overview')}
@@ -366,7 +291,7 @@ export default function Home() {
                       </button>
                     </div>
 
-                    {/* Блок администратора */}
+                    {/* Admin section */}
                     {user?.role === 'admin' && (
                       <div className="mt-4">
                         <div className="flex items-center space-x-1 mb-2 px-3">
@@ -454,7 +379,7 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Хлебные крошки */}
+            {/* Breadcrumb */}
             <div className="mb-4">
               <div className="flex items-center space-x-2 text-sm">
                 <span className="text-gray-500">Главная</span>
@@ -463,11 +388,11 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Контент (desktop) */}
+            {/* Desktop content by activeTab */}
             <div className="space-y-6">
               {activeTab === 'overview' && (
                 <div className="space-y-6">
-                  {/* Метрики */}
+                  {/* Top metrics */}
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                     <Card className="bg-white border border-gray-200">
                       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -522,10 +447,10 @@ export default function Home() {
                     </Card>
                   </div>
 
-                  {/* Курсы валют */}
+                  {/* Currency rates widget */}
                   <CurrencyRates />
 
-                  {/* Быстрый старт — общая сетка */}
+                  {/* Quick start */}
                   <Card className="bg-white border border-gray-200">
                     <CardHeader>
                       <CardTitle className="flex items-center gap-2">
@@ -535,7 +460,62 @@ export default function Home() {
                       <CardDescription>Основные действия для работы с системой</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                      <QuickActionsPanel items={getQuickActions(user?.role, setActiveTab)} />
+                      <div
+                        className={`grid gap-4 ${
+                          user?.role === 'admin' ? 'grid-cols-1 md:grid-cols-4' : 'grid-cols-1 md:grid-cols-2'
+                        }`}
+                      >
+                        <Button
+                          onClick={() => setActiveTab('generator')}
+                          variant="outline"
+                          className="bg-transparent h-24 flex flex-col gap-2 bg-purple-50 hover:bg-purple-100 border-purple-200"
+                        >
+                          <FileText className="w-6 h-6 text-purple-600" />
+                          <span className="text-purple-700">Создать прайс-лист</span>
+                        </Button>
+
+                        <Button
+                          onClick={() => setActiveTab('labels')}
+                          variant="outline"
+                          className="bg-transparent h-24 flex flex-col gap-2 bg-orange-50 hover:bg-orange-100 border-orange-200"
+                        >
+                          <Package className="w-6 h-6 text-orange-600" />
+                          <span className="text-orange-700">Печать этикеток</span>
+                        </Button>
+
+                        {user?.role === 'manager' && (
+                          <Button
+                            onClick={() => setActiveTab('generator')}
+                            variant="outline"
+                            className="bg-transparent h-24 flex flex-col gap-2 bg-green-50 hover:bg-green-100 border-green-200"
+                          >
+                            <Eye className="w-6 h-6 text-green-600" />
+                            <span className="text-green-700">Просмотр данных</span>
+                          </Button>
+                        )}
+
+                        {user?.role === 'admin' && (
+                          <>
+                            <Button
+                              onClick={() => setActiveTab('upload')}
+                              variant="outline"
+                              className="bg-transparent h-24 flex flex-col gap-2 bg-blue-50 hover:bg-blue-100 border-blue-200"
+                            >
+                              <Upload className="w-6 h-6 text-blue-600" />
+                              <span className="text-blue-700">Загрузить данные</span>
+                            </Button>
+
+                            <Button
+                              onClick={() => setActiveTab('materials')}
+                              variant="outline"
+                              className="bg-transparent h-24 flex flex-col gap-2 bg-green-50 hover:bg-green-100 border-green-200"
+                            >
+                              <Database className="w-6 h-6 text-green-600" />
+                              <span className="text-green-700">Управление материалами</span>
+                            </Button>
+                          </>
+                        )}
+                      </div>
                     </CardContent>
                   </Card>
                 </div>
@@ -696,7 +676,7 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Мобильные хлебные крошки + контент */}
+        {/* Mobile breadcrumb + content */}
         <div className="lg:hidden">
           <div className="mb-4">
             <div className="flex items-center space-x-2 text-sm">
@@ -706,7 +686,7 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Контент (mobile) */}
+          {/* Mobile content mirrors desktop conditions */}
           <div className="space-y-6">
             {activeTab === 'overview' && (
               <div className="space-y-6">
@@ -764,7 +744,7 @@ export default function Home() {
                   </Card>
                 </div>
 
-                {/* Курсы валют (mobile) */}
+                {/* Currency rates widget (mobile) */}
                 <CurrencyRates />
 
                 <Card className="bg-white border border-gray-200">
@@ -776,7 +756,62 @@ export default function Home() {
                     <CardDescription>Основные действия для работы с системой</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    <QuickActionsPanel items={getQuickActions(user?.role, setActiveTab)} />
+                    <div
+                      className={`grid gap-4 ${
+                        user?.role === 'admin' ? 'grid-cols-1 md:grid-cols-4' : 'grid-cols-1 md:grid-cols-2'
+                      }`}
+                    >
+                      <Button
+                        onClick={() => setActiveTab('generator')}
+                        variant="outline"
+                        className="bg-transparent h-24 flex flex-col gap-2 bg-purple-50 hover:bg-purple-100 border-purple-200"
+                      >
+                        <FileText className="w-6 h-6 text-purple-600" />
+                        <span className="text-purple-700">Создать прайс-лист</span>
+                      </Button>
+
+                      <Button
+                        onClick={() => setActiveTab('labels')}
+                        variant="outline"
+                        className="bg-transparent h-24 flex flex-col gap-2 bg-orange-50 hover:bg-orange-100 border-orange-200"
+                      >
+                        <Package className="w-6 h-6 text-orange-600" />
+                        <span className="text-orange-700">Печать этикеток</span>
+                      </Button>
+
+                      {user?.role === 'manager' && (
+                        <Button
+                          onClick={() => setActiveTab('generator')}
+                          variant="outline"
+                          className="bg-transparent h-24 flex flex-col gap-2 bg-green-50 hover:bg-green-100 border-green-200"
+                        >
+                          <Eye className="w-6 h-6 text-green-600" />
+                          <span className="text-green-700">Просмотр данных</span>
+                        </Button>
+                      )}
+
+                      {user?.role === 'admin' && (
+                        <>
+                          <Button
+                            onClick={() => setActiveTab('upload')}
+                            variant="outline"
+                            className="bg-transparent h-24 flex flex-col gap-2 bg-blue-50 hover:bg-blue-100 border-blue-200"
+                          >
+                            <Upload className="w-6 h-6 text-blue-600" />
+                            <span className="text-blue-700">Загрузить данные</span>
+                          </Button>
+
+                          <Button
+                            onClick={() => setActiveTab('materials')}
+                            variant="outline"
+                            className="bg-transparent h-24 flex flex-col gap-2 bg-green-50 hover:bg-green-100 border-green-200"
+                          >
+                            <Database className="w-6 h-6 text-green-600" />
+                            <span className="text-green-700">Управление материалами</span>
+                          </Button>
+                        </>
+                      )}
+                    </div>
                   </CardContent>
                 </Card>
               </div>
@@ -863,7 +898,7 @@ export default function Home() {
                       <Settings className="w-5 h-5" />
                       Типы отображения
                     </CardTitle>
-                    <CardDescription>Управление типами отображения продукции</CardDescription>
+                  <CardDescription>Управление типами отображения продукции</CardDescription>
                   </CardHeader>
                   <CardContent>
                     <ProductViewTypesManager />

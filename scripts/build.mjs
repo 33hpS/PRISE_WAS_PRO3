@@ -100,6 +100,7 @@ body {
 
 /**
  * Build JavaScript using esbuild
+ * ИСПРАВЛЕНА конфигурация JSX для устранения React Hook Error #310
  */
 async function buildJS() {
   try {
@@ -113,8 +114,12 @@ async function buildJS() {
       target: 'es2020',
       minify: isProduction,
       sourcemap: !isProduction,
-      jsx: 'automatic',
-      jsxImportSource: 'react',
+      
+      // ИСПРАВЛЕНИЕ: Используем классический JSX transform вместо automatic
+      jsx: 'transform',
+      jsxFactory: 'React.createElement',
+      jsxFragment: 'React.Fragment',
+      
       define: {
         'process.env.NODE_ENV': isProduction ? '"production"' : '"development"',
         'global': 'globalThis'
@@ -126,7 +131,14 @@ async function buildJS() {
         '.js': 'js'
       },
       external: [],
-      platform: 'browser'
+      platform: 'browser',
+      
+      // Добавляем inject для автоматического импорта React в каждый файл
+      inject: ['./react-shim.js'],
+      
+      // Настройки для лучшей совместимости
+      keepNames: true,
+      treeShaking: isProduction
     })
 
     console.log('✅ JavaScript built successfully')
@@ -134,6 +146,34 @@ async function buildJS() {
     console.error('❌ JavaScript build failed:', error)
     throw error
   }
+}
+
+/**
+ * Create React shim file for automatic React import
+ */
+function createReactShim() {
+  const shimContent = `import React from 'react';
+export { React };
+export default React;`
+  
+  writeFileSync('react-shim.js', shimContent)
+}
+
+/**
+ * Clean up temporary files
+ */
+function cleanupTempFiles() {
+  const tempFiles = ['react-shim.js', 'temp-input.css']
+  tempFiles.forEach(file => {
+    if (existsSync(file)) {
+      const fs = require('fs')
+      try {
+        fs.unlinkSync(file)
+      } catch (e) {
+        // ignore cleanup errors
+      }
+    }
+  })
 }
 
 /**
@@ -240,6 +280,9 @@ async function buildApp() {
     // Ensure dist directory exists
     ensureDir('dist')
 
+    // Create React shim for esbuild injection
+    createReactShim()
+
     // Build CSS first
     await buildCSS()
 
@@ -252,10 +295,15 @@ async function buildApp() {
     // Copy static files
     copyStaticFiles()
 
+    // Clean up temporary files
+    cleanupTempFiles()
+
     console.log('🎉 Build completed successfully!')
 
   } catch (error) {
     console.error('💥 Build failed:', error)
+    // Clean up even on error
+    cleanupTempFiles()
     process.exit(1)
   }
 }
