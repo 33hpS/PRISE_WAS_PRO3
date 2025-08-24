@@ -1,0 +1,11 @@
+/*
+  X-Frame-Options: DENY
+  X-XSS-Protection: 1; mode=block
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  
+/_app/*
+  Cache-Control: public, immutable, max-age=31536000
+  
+/assets/*
+  Cache-Control: public, immutable, max-age=31536000
