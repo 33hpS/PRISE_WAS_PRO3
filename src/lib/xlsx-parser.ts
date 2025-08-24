@@ -1,351 +1,341 @@
 /**
- * XLSX parsing utilities for tech cards and materials
+ * @file xlsx-parser.ts
+ * @description Excel parsers and helpers:
+ * - Tech card parser compatible with provided template (Russian headers).
+ * - Materials parser for bulk import.
+ * - Cost calculator for tech card materials (+ labor).
+ * Includes number normalization with comma support and tolerant header detection.
  */
+
 import * as XLSX from 'xlsx'
 
-export interface Material {
-  article: string
-  name: string
-  quantity: number
-  unit: string
+/** Normalize any value to string, trim whitespace. */
+function vStr(v: any): string {
+  if (v === undefined || v === null) return ''
+  return String(v).trim()
 }
 
+/** Normalize numeric cell:
+ * - Accepts "1 234,56" or "1,234.56" or plain number
+ * - Returns NaN if cannot parse
+ */
+function vNum(v: any): number {
+  if (typeof v === 'number') return v
+  const s = vStr(v)
+  if (!s) return NaN
+  // Replace space as thousand sep; handle comma as decimal
+  const normalized = s
+    .replace(/\s+/g, '')
+    .replace(/,/g, '.')
+    .replace(/[^0-9.\-]/g, '')
+  const n = Number(normalized)
+  return Number.isFinite(n) ? n : NaN
+}
+
+/* =============================
+ * Types
+ * ============================= */
+
+/** Single material in a tech card table. */
+export interface TechCardMaterial {
+  article?: string
+  name: string
+  unit?: string
+  /** Quantity already includes multiplier and itemsInOrder. */
+  quantity?: number
+  /** Optional coefficient extracted from the sheet. */
+  coefficient?: number
+  /** Optional raw quantity from the sheet (before multipliers). */
+  baseQty?: number
+  note?: string
+  /** Optional unit price (fallback when DB price map is not provided). */
+  price?: number
+}
+
+/** Parsed tech card payload (main sheet only). */
 export interface TechCard {
   productName: string
-  materials: Material[]
-  orderQuantity: number
-  category?: string
-  type?: string
   collection?: string
+  type?: string
+  category?: string
+  itemsInOrder?: number
+  materials: TechCardMaterial[]
 }
 
-export interface MaterialImport {
+/** Row shape for materials import from Excel. */
+export interface ParsedMaterialRow {
   name: string
   unit: string
   price: number
-  category: string
+  category?: string
   article?: string
 }
 
+/* =============================
+ * Tech card parser (for your template)
+ * ============================= */
+
 /**
- * Parse XLSX tech card file
+ * Parse tech card from File (delegates to ArrayBuffer parser).
  */
-export async function parseXLSXTechCard(file: File): Promise<TechCard> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader()
-    
-    reader.onload = (e) => {
-      try {
-        const data = new Uint8Array(e.target?.result as ArrayBuffer)
-        const workbook = XLSX.read(data, { type: 'array' })
-        const worksheet = workbook.Sheets[workbook.SheetNames[0]]
-        const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 })
-        
-        const techCard = parseTechCardData(jsonData)
-        resolve(techCard)
-      } catch (error) {
-        reject(error)
-      }
-    }
-    
-    reader.onerror = () => reject(new Error('Failed to read file'))
-    reader.readAsArrayBuffer(file)
-  })
+export async function parseTechCardFromFile(file: File): Promise<TechCard> {
+  const buf = await file.arrayBuffer()
+  return parseTechCardFromArrayBuffer(buf)
 }
 
 /**
- * Parse material list from XLSX file
+ * Parse tech card from ArrayBuffer.
+ * - Detects header row by Russian titles.
+ * - Reads meta fields above table: "Изделие", "Количество изделий в заказе".
+ * - Computes quantity = baseQty × coefficient × itemsInOrder.
  */
-export async function parseXLSXMaterials(file: File): Promise<MaterialImport[]> {
-  try {
-    const data = await file.arrayBuffer()
-    const workbook = XLSX.read(data, { type: 'array' })
-    const sheetName = workbook.SheetNames[0]
-    const worksheet = workbook.Sheets[sheetName]
-    
-    // Get raw data as array of arrays
-    const jsonData = XLSX.utils.sheet_to_json(worksheet, { 
-      header: 1,
-      defval: '',
-      raw: false 
-    }) as any[][]
-
-    const materials = parseMaterialsData(jsonData)
-    return materials
-  } catch (error: any) {
-    console.error('Error parsing XLSX materials:', error)
-    throw new Error('Ошибка при парсинге файла материалов: ' + (error?.message || String(error)))
+export async function parseTechCardFromArrayBuffer(buffer: ArrayBuffer): Promise<TechCard> {
+  const wb = XLSX.read(buffer, { type: 'array' })
+  const sheetName = wb.SheetNames[0]
+  if (!sheetName) {
+    return { productName: 'Изделие', materials: [], itemsInOrder: 1 }
   }
-}
 
-/**
- * Utility: normalize number from RU formatting
- * - removes spaces and NBSP
- * - replaces comma with dot
- */
-function parseRuNumber(input: any): number {
-  if (input === null || input === undefined) return 0
-  const str = String(input)
-    .replace(/\u00A0/g, ' ')
-    .replace(/\s+/g, '')
-    .replace(',', '.')
-  const num = parseFloat(str)
-  return Number.isFinite(num) ? num : 0
-}
+  const ws = wb.Sheets[sheetName]
+  const ref = (ws as any)['!ref'] || 'A1:Z2000'
+  const range = XLSX.utils.decode_range(ref)
 
-/**
- * Find header indexes by names (case-insensitive). Supports EN/RU labels.
- */
-function detectColumns(headerRow: any[]): {
-  idxArticle: number | null
-  idxName: number | null
-  idxUnit: number | null
-  idxPrice: number | null
-} {
-  const header = (headerRow || []).map((c) => String(c || '').trim().toLowerCase())
-  const has = (v: string) => header.findIndex((h) => h.includes(v))
+  // Meta: find "Изделие" and "Количество изделий в заказе" in left column
+  let productName = 'Изделие'
+  let itemsInOrder = 1
+  for (let r = range.s.r; r <= Math.min(range.s.r + 20, range.e.r); r++) {
+    const label = vStr((ws as any)[XLSX.utils.encode_cell({ r, c: 0 })]?.v).toLowerCase()
+    const value = vStr((ws as any)[XLSX.utils.encode_cell({ r, c: 1 })]?.v)
+    if (!label) continue
+    if (label.includes('изделие')) {
+      productName = value || productName
+    } else if (label.includes('количество изделий') || label.includes('в заказе')) {
+      const n = vNum(value)
+      itemsInOrder = Number.isFinite(n) && n > 0 ? Math.round(n) : 1
+    }
+  }
 
-  let idxArticle = has('article')
-  if (idxArticle === -1) idxArticle = has('артикул')
-  if (idxArticle === -1) idxArticle = has('арт')
-  if (idxArticle === -1) idxArticle = null
+  // Find header row for the materials table
+  type MapKeys = 'article' | 'name' | 'note' | 'coef' | 'qty' | 'unit'
+  const map: Record<MapKeys, number | undefined> = {
+    article: undefined,
+    name: undefined,
+    note: undefined,
+    coef: undefined,
+    qty: undefined,
+    unit: undefined,
+  }
 
-  let idxName = has('name')
-  if (idxName === -1) idxName = has('наимен')
-  if (idxName === -1) idxName = has('материал')
-  if (idxName === -1) idxName = null
+  let headerRow = -1
+  for (let r = range.s.r; r <= range.e.r; r++) {
+    const rowValues: string[] = []
+    for (let c = range.s.c; c <= range.e.c; c++) {
+      rowValues.push(vStr((ws as any)[XLSX.utils.encode_cell({ r, c })]?.v))
+    }
+    const lower = rowValues.map((s) => s.toLowerCase())
 
-  let idxUnit = has('unit')
-  if (idxUnit === -1) idxUnit = has('ед.')
-  if (idxUnit === -1) idxUnit = has('ед ')
-  if (idxUnit === -1) idxUnit = has('единиц')
-  if (idxUnit === -1) idxUnit = null
-
-  let idxPrice = has('price')
-  if (idxPrice === -1) idxPrice = has('цена')
-  if (idxPrice === -1) idxPrice = has('стоим')
-  if (idxPrice === -1) idxPrice = null
-
-  return { idxArticle, idxName, idxUnit, idxPrice }
-}
-
-/**
- * Parse materials data from Excel rows.
- * - Robust header detection (article/name/unit/price)
- * - Flexible column order
- * - RU number parsing ("1 165,97" -> 1165.97)
- * - Optional article
- */
-function parseMaterialsData(data: any[][]): MaterialImport[] {
-  const materials: MaterialImport[] = []
-
-  if (!Array.isArray(data) || data.length === 0) return materials
-
-  // 1) Try to find header row within first 6 lines
-  let headerRowIndex = -1
-  let mapping: ReturnType<typeof detectColumns> | null = null
-
-  for (let i = 0; i < Math.min(data.length, 6); i++) {
-    const row = data[i] || []
-    const m = detectColumns(row)
-    if (m.idxName !== null && m.idxUnit !== null && m.idxPrice !== null) {
-      headerRowIndex = i
-      mapping = m
+    const hasName = lower.some((s) => s.includes('наимен') || s.includes('материал'))
+    const hasQty = lower.some((s) => s.includes('количество') || s.includes('кол-во') || s.includes('qty'))
+    if (hasName && hasQty) {
+      headerRow = r
+      rowValues.forEach((h, idx) => {
+        const s = h.toLowerCase()
+        if (s.includes('артик')) map.article = idx
+        else if (s.includes('наимен') || s.includes('материал')) map.name = idx
+        else if (s.includes('примеч')) map.note = idx
+        else if (s.includes('коэф')) map.coef = idx // "Коэф-т"
+        else if (s.includes('кол')) map.qty = idx // "Количество в заказе"
+        else if (s.includes('ед') || s.includes('изм')) map.unit = idx
+      })
       break
     }
   }
 
-  // 2) Fallback: assume Excel template columns: A:article, B:name, C:unit, D:price
-  if (headerRowIndex === -1) {
-    headerRowIndex = 0
-    mapping = { idxArticle: 0, idxName: 1, idxUnit: 2, idxPrice: 3 }
+  const materials: TechCardMaterial[] = []
+  if (headerRow >= 0) {
+    for (let r = headerRow + 1; r <= range.e.r; r++) {
+      const name = map.name !== undefined ? vStr((ws as any)[XLSX.utils.encode_cell({ r, c: map.name })]?.v) : ''
+      const isEmptyRow = !name
+      if (isEmptyRow) {
+        // stop on two consecutive empty rows
+        const nextName =
+          map.name !== undefined
+            ? vStr((ws as any)[XLSX.utils.encode_cell({ r: r + 1, c: map.name })]?.v)
+            : ''
+        if (!nextName) break
+        continue
+      }
+
+      const article = map.article !== undefined ? vStr((ws as any)[XLSX.utils.encode_cell({ r, c: map.article })]?.v) : ''
+      const note = map.note !== undefined ? vStr((ws as any)[XLSX.utils.encode_cell({ r, c: map.note })]?.v) : ''
+      const unit = map.unit !== undefined ? vStr((ws as any)[XLSX.utils.encode_cell({ r, c: map.unit })]?.v) : ''
+      const coefRaw = map.coef !== undefined ? (ws as any)[XLSX.utils.encode_cell({ r, c: map.coef })]?.v : ''
+      const qtyRaw = map.qty !== undefined ? (ws as any)[XLSX.utils.encode_cell({ r, c: map.qty })]?.v : ''
+
+      const coef = Number.isFinite(vNum(coefRaw)) ? Math.max(0, vNum(coefRaw)) : 1
+      const baseQty = Number.isFinite(vNum(qtyRaw)) ? Math.max(0, vNum(qtyRaw)) : 0
+      const quantity = Math.max(0, baseQty * coef * (itemsInOrder || 1))
+
+      materials.push({
+        article: article || undefined,
+        name,
+        unit: unit || undefined,
+        quantity,
+        coefficient: coef,
+        baseQty,
+        note: note || undefined,
+      })
+    }
   }
 
-  const { idxArticle, idxName, idxUnit, idxPrice } = mapping!
+  return {
+    productName,
+    itemsInOrder,
+    materials,
+  }
+}
 
-  // 3) Start from first data row
-  const start = headerRowIndex + 1
+/**
+ * Alias used around the app (accepts File or ArrayBuffer).
+ */
+export async function parseXLSXTechCard(input: File | ArrayBuffer): Promise<TechCard> {
+  if (input instanceof File) return parseTechCardFromFile(input)
+  return parseTechCardFromArrayBuffer(input)
+}
 
-  for (let i = start; i < data.length; i++) {
-    const row = data[i] || []
+/* =============================
+ * Materials parser (bulk import)
+ * ============================= */
 
-    const name = (idxName !== null ? row[idxName] : '')?.toString().trim() || ''
-    const unit = (idxUnit !== null ? row[idxUnit] : '')?.toString().trim() || 'шт'
-    const priceRaw = idxPrice !== null ? row[idxPrice] : ''
-    const article = (idxArticle !== null ? row[idxArticle] : '')?.toString().trim() || undefined
+/**
+ * Parse materials list from an Excel sheet.
+ * Detects header row by typical Russian titles and parses until empty rows.
+ */
+export async function parseXLSXMaterials(input: File | ArrayBuffer): Promise<ParsedMaterialRow[]> {
+  const buffer = input instanceof File ? await input.arrayBuffer() : input
+  const wb = XLSX.read(buffer, { type: 'array' })
+  const sheetName = wb.SheetNames[0]
+  if (!sheetName) return []
+  const sheet = wb.Sheets[sheetName]
+  const ref = (sheet as any)['!ref'] || 'A1:Z2000'
+  const range = XLSX.utils.decode_range(ref)
 
-    // Skip completely empty lines
-    if (!name && !unit && (priceRaw === '' || priceRaw === null || priceRaw === undefined)) continue
-    if (!name) continue
+  let headerRow = -1
+  const map: Record<'article' | 'name' | 'unit' | 'price' | 'category', number | undefined> = {
+    article: undefined,
+    name: undefined,
+    unit: undefined,
+    price: undefined,
+    category: undefined,
+  }
 
-    const price = parseRuNumber(priceRaw)
-    if (!(price > 0)) continue
+  for (let r = range.s.r; r <= range.e.r; r++) {
+    const row: string[] = []
+    for (let c = range.s.c; c <= range.e.c; c++) {
+      row.push(vStr((sheet as any)[XLSX.utils.encode_cell({ r, c })]?.v))
+    }
+    const low = row.map((s) => s.toLowerCase())
+    const hasName = low.some((s) => s.includes('наимен') || s.includes('материал') || s.includes('name'))
+    const hasPrice = low.some((s) => s.includes('цена') || s.includes('стоим') || s.includes('price'))
+    if (hasName && hasPrice) {
+      headerRow = r
+      row.forEach((h, idx) => {
+        const s = h.toLowerCase()
+        if (s.includes('артик')) map.article = idx
+        else if (s.includes('наимен') || s.includes('материал') || s === 'name') map.name = idx
+        else if ((s.includes('ед') && s.includes('изм')) || s === 'ед.' || s === 'unit') map.unit = idx
+        else if (s.includes('цена') || s.includes('стоим') || s === 'price' || s.includes('сом')) map.price = idx
+        else if (s.includes('катег') || s.includes('тип') || s === 'category') map.category = idx
+      })
+      break
+    }
+  }
 
-    const category = determineMaterialCategory(name)
+  // Fallback when headers not found: parse columns A-D (Name, Unit, Price, Category/Article)
+  if (headerRow < 0 || map.name === undefined || map.price === undefined) {
+    const fallback: ParsedMaterialRow[] = []
+    for (let r = range.s.r + 1; r <= range.e.r; r++) {
+      const name = vStr((sheet as any)[XLSX.utils.encode_cell({ r, c: 0 })]?.v)
+      const unit = vStr((sheet as any)[XLSX.utils.encode_cell({ r, c: 1 })]?.v)
+      const price = vNum((sheet as any)[XLSX.utils.encode_cell({ r, c: 2 })]?.v)
+      const extra = vStr((sheet as any)[XLSX.utils.encode_cell({ r, c: 3 })]?.v)
+      if (!name && !unit && !price) continue
+      fallback.push({
+        name: name || 'Материал',
+        unit: unit || 'шт',
+        price: Number.isFinite(price) ? price : 0,
+        category: extra || undefined,
+      })
+    }
+    return fallback
+  }
 
-    materials.push({
-      name,
-      unit,
-      price,
-      category,
-      article,
+  // Parse rows under the header
+  const out: ParsedMaterialRow[] = []
+  for (let r = headerRow + 1; r <= range.e.r; r++) {
+    const name =
+      map.name !== undefined ? vStr((sheet as any)[XLSX.utils.encode_cell({ r, c: map.name })]?.v) : ''
+    const priceRaw =
+      map.price !== undefined ? (sheet as any)[XLSX.utils.encode_cell({ r, c: map.price })]?.v : ''
+    const unit =
+      map.unit !== undefined ? vStr((sheet as any)[XLSX.utils.encode_cell({ r, c: map.unit })]?.v) : ''
+    const category =
+      map.category !== undefined
+        ? vStr((sheet as any)[XLSX.utils.encode_cell({ r, c: map.category })]?.v)
+        : ''
+    const article =
+      map.article !== undefined
+        ? vStr((sheet as any)[XLSX.utils.encode_cell({ r, c: map.article })]?.v)
+        : ''
+
+    const isEmpty = !name && (priceRaw === '' || priceRaw === null || priceRaw === undefined)
+    if (isEmpty) {
+      const nextName =
+        map.name !== undefined
+          ? vStr((sheet as any)[XLSX.utils.encode_cell({ r: r + 1, c: map.name })]?.v)
+          : ''
+      if (!nextName) break
+      continue
+    }
+
+    const price = vNum(priceRaw)
+    out.push({
+      name: name || 'Материал',
+      unit: unit || 'шт',
+      price: Number.isFinite(price) ? price : 0,
+      category: category || undefined,
+      article: article || undefined,
     })
   }
 
-  return materials
+  return out
 }
 
+/* =============================
+ * Cost calculator
+ * ============================= */
+
 /**
- * Parse tech card data from Excel rows
+ * Calculate total cost for a set of materials plus labor.
+ * - Uses price from row if present, otherwise from provided `priceMap` by material name.
+ * - Ignores rows with non-finite quantities.
+ * @param materials Parsed materials with quantities
+ * @param priceMap Map name -> unit price (сом)
+ * @param laborCost Labor cost (сом)
+ * @returns Total cost rounded to the nearest integer
  */
-function parseTechCardData(data: any[][]): TechCard {
-  let productName = ''
-  let orderQuantity = 1
-  const materials: Material[] = []
-  
-  // Find product name and order quantity
-  for (let i = 0; i < data.length; i++) {
-    const row = data[i]
-    if (row[0] && typeof row[0] === 'string') {
-      if (row[0].includes('Изделие') || row[0].includes('Заказ')) {
-        productName = row[1] || row[3] || ''
-      }
-      if (row[0].includes('Количество изделий')) {
-        orderQuantity = parseInt(row[1]) || 1
-      }
-    }
+export function calculateTotalCost(
+  materials: Array<Pick<TechCardMaterial, 'name' | 'quantity' | 'price'>>,
+  priceMap: Record<string, number> = {},
+  laborCost = 0,
+): number {
+  let sum = 0
+  for (const m of materials) {
+    const qty = Number(m.quantity) || 0
+    if (qty <= 0) continue
+    const unitPrice = Number.isFinite(Number(m.price)) && Number(m.price) > 0 ? Number(m.price) : (priceMap[m.name] || 0)
+    sum += unitPrice * qty
   }
-  
-  // Find materials table start
-  let materialsStart = -1
-  for (let i = 0; i < data.length; i++) {
-    const row = data[i]
-    if ((row[0] === 'Артикул' || row[0]?.toString().toLowerCase().includes('артикул')) && 
-        (row[1]?.toString().toLowerCase().includes('наименование') || row[1]?.toString().toLowerCase().includes('материал'))) {
-      materialsStart = i + 1
-      break
-    }
-  }
-  
-  // Parse materials
-  if (materialsStart > -1) {
-    for (let i = materialsStart; i < data.length; i++) {
-      const row = data[i]
-      if (row[0] && row[1] && (row[2] !== undefined && row[2] !== null) && row[3]) {
-        const quantity = parseFloat(row[2])
-        if (!isNaN(quantity) && quantity > 0) {
-          materials.push({
-            article: row[0].toString(),
-            name: row[1].toString(),
-            quantity: quantity,
-            unit: row[3].toString()
-          })
-        }
-      }
-    }
-  }
-  
-  // Determine category and type from product name
-  const category = determineCategory(productName)
-  const type = determineType(productName)
-  const collection = determineCollection(productName)
-  
-  return {
-    productName,
-    materials,
-    orderQuantity,
-    category,
-    type,
-    collection
-  }
-}
-
-/**
- * Determine product category from name
- */
-function determineCategory(productName: string): string {
-  const name = productName.toLowerCase()
-  
-  if (name.includes('зеркало')) return 'Зеркала'
-  if (name.includes('тумба')) return 'Тумбы'
-  if (name.includes('пенал')) return 'Пеналы'
-  if (name.includes('полка')) return 'Полки'
-  if (name.includes('шкаф')) return 'Шкафы'
-  
-  return 'Мебель для ванной'
-}
-
-/**
- * Determine product type from name
- */
-function determineType(productName: string): string {
-  const name = productName.toLowerCase()
-  
-  if (name.includes('краш')) return 'Крашенная'
-  if (name.includes('пленочн')) return 'Пленочная'
-  if (name.includes('led')) return 'LED'
-  
-  return 'Обычная'
-}
-
-/**
- * Determine collection from name
- */
-function determineCollection(productName: string): string {
-  const name = productName.toLowerCase()
-  
-  if (name.includes('классик')) return 'Классик'
-  if (name.includes('грация')) return 'Грация'
-  if (name.includes('модерн')) return 'Модерн'
-  if (name.includes('элит')) return 'Элит'
-  
-  return 'Стандарт'
-}
-
-/**
- * Determine material category from name
- */
-function determineMaterialCategory(materialName: string): string {
-  const name = materialName.toLowerCase()
-  
-  // Плитные материалы
-  if (name.includes('лдсп') || name.includes('мдф')) return 'Плитные материалы'
-  
-  // Кромочные материалы
-  if (name.includes('кромка')) return 'Кромочные материалы'
-  
-  // Фурнитура и механизмы
-  if (name.includes('петля') || name.includes('направляющ') || name.includes('саморез') || 
-      name.includes('винт') || name.includes('евровинт') || name.includes('шкант') ||
-      name.includes('заглушк') || name.includes('подвес') || name.includes('push') ||
-      name.includes('ограничитель') || name.includes('каркас')) return 'Фурнитура'
-  
-  // Электрика и подсветка
-  if (name.includes('блок питан') || name.includes('датчик') || name.includes('сенсор') ||
-      name.includes('led') || name.includes('подсветк')) return 'Электрика и подсветка'
-  
-  // Клеи и составы
-  if (name.includes('клей') || name.includes('акфикс') || name.includes('миррор') ||
-      name.includes('грунт')) return 'Клеи и составы'
-  
-  // Отделочные материалы
-  if (name.includes('пленка') || name.includes('наклейк') || name.includes('краска') ||
-      name.includes('картон') || name.includes('изовер') || name.includes('подложк')) return 'Отделочные материалы'
-  
-  // Зеркала
-  if (name.includes('зер') && name.includes('мм')) return 'Зеркала'
-  
-  return 'Прочие материалы'
-}
-
-/**
- * Calculate total cost from materials and prices
- */
-export function calculateTotalCost(materials: Material[], materialPrices: Record<string, number>, laborCost: number = 0): number {
-  const materialsCost = materials.reduce((total, material) => {
-    const price = materialPrices[material.name] || 0
-    return total + (material.quantity * price)
-  }, 0)
-  
-  return materialsCost + laborCost
+  const total = sum + Math.max(0, laborCost || 0)
+  return Math.round(total)
 }

@@ -626,7 +626,7 @@ export default function ProductManager() {
                         <div>
                           <span className="font-medium">Себестоимость:</span>
                           <p className="text-blue-600 font-semibold">
-                            {formData.total_cost.toLocaleString('ru-RU')} руб.
+                            {formData.total_cost.toLocaleString('ru-RU')} сом
                           </p>
                         </div>
                         <div>

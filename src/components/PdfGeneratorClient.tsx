@@ -15,6 +15,7 @@ import { Separator } from './ui/separator'
 import { Printer, Download, Eye, Server, Monitor, Upload, Images } from 'lucide-react'
 import jsPDF from 'jspdf'
 import html2canvas from 'html2canvas'
+import { LOGO_URL, BRAND } from '../config/branding'
 import { usePdfStore, buildPdfDataFromProducts, type PdfData } from '../store/pdf-store'
 import { generateServerPdf } from '../lib/pdfServer'
 
@@ -87,7 +88,7 @@ export default function PdfGeneratorClient(): JSX.Element {
       documentData: {
         title: 'ПРАЙС-ЛИСТ МЕБЕЛИ ДЛЯ ВАННЫХ КОМНАТ',
       },
-      companyData: { name: 'WASSER', tagline: 'Мебельная фабрика' },
+      companyData: { name: BRAND.name, tagline: BRAND.tagline },
       logo,
       primaryColor: '#667eea',
       accentColor: '#764ba2',

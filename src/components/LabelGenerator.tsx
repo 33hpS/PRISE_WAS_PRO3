@@ -14,6 +14,7 @@ import { Separator } from './ui/separator'
 import { Printer, Download, QrCode, Tags, Settings, Eye, Plus, Trash2 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import html2canvas from 'html2canvas'
+import { LOGO_URL } from '../config/branding'
 
 interface Product {
   id: string
