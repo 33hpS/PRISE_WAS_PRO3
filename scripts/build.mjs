@@ -7,6 +7,10 @@ const execAsync = promisify(exec)
 
 /**
  * Build script for the furniture factory application
+ * - Outputs JS to dist/main.js
+ * - Outputs CSS to dist/main.css (unified name expected by hosting)
+ * - Generates dist/index.html with correct asset links
+ * - Copies Cloudflare Pages redirects if present
  */
 const isProduction = process.argv.includes('--production')
 
@@ -21,42 +25,44 @@ function ensureDir(dir) {
 
 /**
  * Build CSS using Tailwind CLI
+ * - Writes to dist/main.css
+ * - Appends shadcn.css if present
  */
 async function buildCSS() {
   try {
     console.log('🎨 Building CSS with Tailwind...')
-    
+
     // Create a temporary input CSS file with Tailwind directives
     const inputCSS = `@tailwind base;
 @tailwind components;
 @tailwind utilities;`
-    
+
     writeFileSync('temp-input.css', inputCSS)
-    
+
     // Build CSS using Tailwind CLI
-    const command = isProduction 
-      ? 'npx tailwindcss -i temp-input.css -o dist/styles.css --minify'
-      : 'npx tailwindcss -i temp-input.css -o dist/styles.css'
-    
+    const command = isProduction
+      ? 'npx tailwindcss -i temp-input.css -o dist/main.css --minify'
+      : 'npx tailwindcss -i temp-input.css -o dist/main.css'
+
     await execAsync(command)
-    
+
     // Append shadcn styles if they exist
     if (existsSync('src/shadcn.css')) {
       const shadcnCSS = readFileSync('src/shadcn.css', 'utf8')
-      const builtCSS = readFileSync('dist/styles.css', 'utf8')
-      writeFileSync('dist/styles.css', builtCSS + '\n' + shadcnCSS)
+      const builtCSS = readFileSync('dist/main.css', 'utf8')
+      writeFileSync('dist/main.css', builtCSS + '\n' + shadcnCSS)
     }
-    
+
     // Clean up temp file
     if (existsSync('temp-input.css')) {
       const fs = await import('fs')
       fs.unlinkSync('temp-input.css')
     }
-    
+
     console.log('✅ CSS built successfully')
   } catch (error) {
     console.error('❌ CSS build failed:', error)
-    
+
     // Fallback: create minimal CSS with shadcn
     let fallbackCSS = `
 /* Base styles */
@@ -81,13 +87,13 @@ body {
 .rounded { border-radius: 0.25rem; }
 .shadow { box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1); }
 `
-    
+
     if (existsSync('src/shadcn.css')) {
       const shadcnCSS = readFileSync('src/shadcn.css', 'utf8')
       fallbackCSS += '\n' + shadcnCSS
     }
-    
-    writeFileSync('dist/styles.css', fallbackCSS)
+
+    writeFileSync('dist/main.css', fallbackCSS)
     console.log('📋 Fallback CSS created')
   }
 }
@@ -98,7 +104,7 @@ body {
 async function buildJS() {
   try {
     console.log('🔧 Building JavaScript...')
-    
+
     await esbuild({
       entryPoints: ['src/main.tsx'],
       bundle: true,
@@ -122,7 +128,7 @@ async function buildJS() {
       external: [],
       platform: 'browser'
     })
-    
+
     console.log('✅ JavaScript built successfully')
   } catch (error) {
     console.error('❌ JavaScript build failed:', error)
@@ -132,17 +138,18 @@ async function buildJS() {
 
 /**
  * Generate HTML file
+ * - Links ./main.css and ./main.js
  */
 function generateHTML() {
   console.log('📄 Generating HTML...')
-  
+
   const html = `<!DOCTYPE html>
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Мебельная фабрика - Генератор прайс-листов</title>
-  <link rel="stylesheet" href="./styles.css">
+  <link rel="stylesheet" href="./main.css">
   <style>
     /* Critical CSS for initial load */
     .loading {
@@ -159,7 +166,7 @@ function generateHTML() {
       z-index: 9999;
       color: white;
     }
-    
+
     .spinner {
       width: 40px;
       height: 40px;
@@ -169,18 +176,18 @@ function generateHTML() {
       animation: spin 1s linear infinite;
       margin-bottom: 16px;
     }
-    
+
     @keyframes spin {
       0% { transform: rotate(0deg); }
       100% { transform: rotate(360deg); }
     }
-    
+
     .loading-text {
       font-size: 18px;
       font-weight: 500;
       margin-bottom: 8px;
     }
-    
+
     .loading-subtitle {
       font-size: 14px;
       opacity: 0.8;
@@ -198,23 +205,24 @@ function generateHTML() {
   <script src="./main.js" defer></script>
 </body>
 </html>`
-  
+
   writeFileSync('dist/index.html', html)
   console.log('✅ HTML generated successfully')
 }
 
 /**
  * Copy static files
+ * - Copies public/_redirects to dist/_redirects for SPA fallback
  */
 function copyStaticFiles() {
   console.log('📁 Copying static files...')
-  
+
   // Copy _headers for Cloudflare Pages
   if (existsSync('_headers')) {
     copyFileSync('_headers', 'dist/_headers')
     console.log('📋 Copied _headers')
   }
-  
+
   // Copy _redirects for Cloudflare Pages
   if (existsSync('public/_redirects')) {
     copyFileSync('public/_redirects', 'dist/_redirects')
@@ -228,24 +236,24 @@ function copyStaticFiles() {
 async function buildApp() {
   try {
     console.log(`🚀 Starting ${isProduction ? 'production' : 'development'} build...`)
-    
+
     // Ensure dist directory exists
     ensureDir('dist')
-    
+
     // Build CSS first
     await buildCSS()
-    
+
     // Build JavaScript
     await buildJS()
-    
+
     // Generate HTML
     generateHTML()
-    
+
     // Copy static files
     copyStaticFiles()
-    
+
     console.log('🎉 Build completed successfully!')
-    
+
   } catch (error) {
     console.error('💥 Build failed:', error)
     process.exit(1)
