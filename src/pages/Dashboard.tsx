@@ -226,7 +226,7 @@ export default function DashboardPage(): JSX.Element {
 
   /** Рендер контента по вкладке */
   const renderTab = useCallback(
-    (tab: DashboardTab): JSX.Element => {
+    (tab: DashboardTab): React.ReactNode => {
       switch (tab) {
         case 'overview':
           return (

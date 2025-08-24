@@ -1,47 +1,40 @@
-/**
- * @file QuickActionsPanel.tsx
- * @description Панель быстрых действий с акцентными карточками.
- */
+// src/components/home/QuickActionsPanel.tsx
 import React from 'react'
-import { Card, CardContent, CardHeader, CardTitle } from '../ui/card'
+import { Button } from '../ui/button'
 
-/** Элемент быстрого действия */
 export interface QuickActionItem {
   label: string
-  description?: string
+  onClick: () => void
   icon?: React.ReactNode
-  onClick?: () => void
+  // Optional Tailwind classes to colorize action
   accentClass?: string
 }
 
-/**
- * QuickActionsPanel — сетка карточек для быстрого доступа к разделам
- */
-export default function QuickActionsPanel({ items }: { items: QuickActionItem[] }): JSX.Element {
+interface QuickActionsPanelProps {
+  items: QuickActionItem[]
+  // md grid columns: 2 or 4 by default
+  mdCols?: 2 | 3 | 4
+}
+
+export default function QuickActionsPanel({ items, mdCols = 2 }: QuickActionsPanelProps) {
+  // NOTE: No hooks inside. Pure presentational component.
+  const gridCols = mdCols === 4 ? 'grid-cols-1 md:grid-cols-4' :
+                   mdCols === 3 ? 'grid-cols-1 md:grid-cols-3' :
+                   'grid-cols-1 md:grid-cols-2'
+
   return (
-    <Card className="bg-white border border-gray-200">
-      <CardHeader>
-        <CardTitle className="text-base font-semibold">Быстрые действия</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          {items.map((it) => (
-            <button
-              key={it.label}
-              onClick={it.onClick}
-              className={`text-left p-4 rounded-lg border transition hover:-translate-y-0.5 hover:shadow focus:outline-none focus:ring-2 focus:ring-blue-500 ${it.accentClass || 'border-gray-200 bg-gray-50 text-gray-800'}`}
-              aria-label={it.label}
-              title={it.label}
-            >
-              <div className="flex items-center gap-2">
-                {it.icon}
-                <div className="font-semibold">{it.label}</div>
-              </div>
-              {it.description && <div className="text-sm text-gray-600 mt-1">{it.description}</div>}
-            </button>
-          ))}
-        </div>
-      </CardContent>
-    </Card>
+    <div className={`grid gap-4 ${gridCols}`}>
+      {items.map((item, idx) => (
+        <Button
+          key={`${item.label}-${idx}`}
+          onClick={item.onClick}
+          variant="outline"
+          className={`bg-transparent h-24 flex flex-col gap-2 ${item.accentClass || ''}`}
+        >
+          {item.icon ? item.icon : null}
+          <span>{item.label}</span>
+        </Button>
+      ))}
+    </div>
   )
 }
