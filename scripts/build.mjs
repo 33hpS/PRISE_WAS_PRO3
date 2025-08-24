@@ -9,7 +9,7 @@ const execAsync = promisify(exec)
  * Build script for the furniture factory application
  * - Outputs JS to dist/main.js
  * - Outputs CSS to dist/main.css (unified name expected by hosting)
- * - Generates dist/index.html with correct asset links
+ * - Generates dist/index.html with correct asset links (no inline CSS)
  * - Copies Cloudflare Pages redirects/headers if present
  */
 const isProduction = process.argv.includes('--production')
@@ -28,7 +28,7 @@ function ensureDir(dir) {
  */
 async function buildCSS() {
   try {
-    console.log('🎨 Building CSS with Tailwind...')
+    console.log(`🎨 Building CSS with Tailwind...`)
 
     const inputCSS = `@tailwind base;
 @tailwind components;
@@ -45,7 +45,7 @@ async function buildCSS() {
     if (existsSync('src/shadcn.css')) {
       const shadcnCSS = readFileSync('src/shadcn.css', 'utf8')
       const builtCSS = readFileSync('dist/main.css', 'utf8')
-      writeFileSync('dist/main.css', builtCSS + '\n' + shadcnCSS)
+      writeFileSync('dist/main.css', `${builtCSS}\n${shadcnCSS}`)
     }
 
     // Cleanup temp input
@@ -61,7 +61,7 @@ async function buildCSS() {
   } catch (error) {
     console.error('❌ CSS build failed:', error)
 
-    // Fallback CSS
+    // Fallback CSS (very small set)
     let fallbackCSS = `
 /* Base styles */
 * { box-sizing: border-box; }
@@ -156,7 +156,7 @@ function cleanupTempFiles() {
   })
 }
 
-/** Generate HTML file */
+/** Generate HTML file (no inline <style>) */
 function generateHTML() {
   console.log('📄 Generating HTML...')
 
@@ -167,20 +167,13 @@ function generateHTML() {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Мебельная фабрика - Генератор прайс-листов</title>
   <link rel="stylesheet" href="./main.css">
-  <style>
-    .loading { position: fixed; inset: 0; display:flex; flex-direction:column; align-items:center; justify-content:center; background: linear-gradient(135deg,#667eea 0%,#764ba2 100%); color:#fff; z-index:9999; }
-    .spinner { width:40px; height:40px; border:4px solid rgba(255,255,255,.3); border-top:4px solid #fff; border-radius:50%; animation:spin 1s linear infinite; margin-bottom:16px; }
-    @keyframes spin { 0%{transform:rotate(0)} 100%{transform:rotate(360deg)} }
-    .loading-text { font-size:18px; font-weight:500; margin-bottom:8px; }
-    .loading-subtitle { font-size:14px; opacity:.85; }
-  </style>
 </head>
 <body>
   <div id="root">
-    <div class="loading">
-      <div class="spinner"></div>
-      <div class="loading-text">Загрузка приложения...</div>
-      <div class="loading-subtitle">Мебельная фабрика</div>
+    <div class="fixed inset-0 flex flex-col items-center justify-center bg-gradient-to-br from-indigo-500 to-purple-600 text-white z-50">
+      <div class="w-10 h-10 border-4 border-white/30 border-t-white rounded-full animate-spin mb-4"></div>
+      <div class="text-lg font-medium mb-1">Загрузка приложения...</div>
+      <div class="text-sm opacity-90">Мебельная фабрика</div>
     </div>
   </div>
   <script src="./main.js" defer></script>
@@ -207,7 +200,7 @@ function copyStaticFiles() {
 /** Main build function */
 async function buildApp() {
   try {
-    console.log(`🚀 Starting ${isProduction ? 'production' : 'development'} build...`)
+    console.log(\`🚀 Starting \${isProduction ? 'production' : 'development'} build...\`)
 
     ensureDir('dist')
     createReactShim()
