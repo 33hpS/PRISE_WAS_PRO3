@@ -48,10 +48,13 @@ async function buildCSS() {
       writeFileSync('dist/main.css', builtCSS + '\n' + shadcnCSS)
     }
 
+    // Cleanup temp input
     if (existsSync('temp-input.css')) {
       try {
         unlinkSync('temp-input.css')
-      } catch { /* ignore */ }
+      } catch {
+        /* ignore */
+      }
     }
 
     console.log('✅ CSS built successfully')
@@ -108,20 +111,20 @@ async function buildJS() {
 
       define: {
         'process.env.NODE_ENV': isProduction ? '"production"' : '"development"',
-        'global': 'globalThis'
+        global: 'globalThis',
       },
       loader: {
         '.tsx': 'tsx',
         '.ts': 'ts',
         '.jsx': 'jsx',
-        '.js': 'js'
+        '.js': 'js',
       },
       external: [],
       platform: 'browser',
 
       inject: ['./react-shim.js'],
       keepNames: true,
-      treeShaking: isProduction
+      treeShaking: isProduction,
     })
 
     console.log('✅ JavaScript built successfully')
@@ -144,7 +147,11 @@ function cleanupTempFiles() {
   const tempFiles = ['react-shim.js', 'temp-input.css']
   tempFiles.forEach((file) => {
     if (existsSync(file)) {
-      try { unlinkSync(file) } catch { /* ignore */ }
+      try {
+        unlinkSync(file)
+      } catch {
+        /* ignore */
+      }
     }
   })
 }
@@ -200,7 +207,7 @@ function copyStaticFiles() {
 /** Main build function */
 async function buildApp() {
   try {
-    console.log(\`🚀 Starting \${isProduction ? 'production' : 'development'} build...\`)
+    console.log(`🚀 Starting ${isProduction ? 'production' : 'development'} build...`)
 
     ensureDir('dist')
     createReactShim()

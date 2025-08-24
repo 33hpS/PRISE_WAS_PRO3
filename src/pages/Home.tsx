@@ -1,23 +1,11 @@
 /**
- * @file Home.tsx
- * @description Главная панель: метрики, быстрые действия и доступ к модулям.
- * - Не использует внешние CDN
- * - Хуки роутера берём из `react-router` (соответствие окружению)
- * - Пользователь определяется безопасно: localStorage → Supabase → fallback
+ * Home page component: main dashboard with navigation and feature panels.
+ * Adds CurrencyRates widget (USD, EUR, RUB, KZT, CNY vs KGS) with caching and refresh.
  */
 
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router'
-import {
-  Package,
-  Settings,
-  Upload,
-  FileText,
-  Database,
-  Users,
-  Eye,
-  LogOut,
-} from 'lucide-react'
+import { Package, Settings, Upload, FileText, Database, Users, Eye, LogOut } from 'lucide-react'
 import { Button } from '../components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card'
 import { Badge } from '../components/ui/badge'
@@ -33,20 +21,13 @@ import TechCardHistory from '../components/TechCardHistory'
 import UserManagement from '../components/UserManagement'
 import RoleGuard from '../components/RoleGuard'
 import LabelGenerator from '../components/LabelGenerator'
+import { getCurrentUserWithRole, UserWithRole } from '../lib/auth'
+import { supabase } from '../lib/supabase'
 import CurrencyRates from '../components/CurrencyRates'
-import { supabase, getCurrentUser } from '../lib/supabase'
 
-/** Роли пользователя в UI */
-type UserRole = 'admin' | 'manager'
-
-/** Пользователь с ролью (минимальный набор для шапки/guard) */
-interface UserWithRole {
-  id: string
-  email: string
-  role: UserRole
-}
-
-/** Вкладки панели */
+/**
+ * Tabs available in the dashboard
+ */
 type DashboardTab =
   | 'overview'
   | 'generator'
@@ -59,7 +40,9 @@ type DashboardTab =
   | 'history'
   | 'users'
 
-/** Счётчики наглядных метрик */
+/**
+ * Lightweight stats shape for overview cards
+ */
 interface OverviewStats {
   materials: number
   products: number
@@ -68,80 +51,7 @@ interface OverviewStats {
 }
 
 /**
- * Вычисление роли по email (локальное правило)
- * admin → для доверенных почт, иначе manager
- */
-function resolveRoleByEmail(email?: string | null): UserRole {
-  const e = (email || '').toLowerCase()
-  if (e === 'sherhan1988hp@gmail.com' || e === 'admin@wasser.com') return 'admin'
-  return 'manager'
-}
-
-/**
- * Чтение пользователя из localStorage (dev- или supabase-сессия)
- */
-function readLocalUser(): UserWithRole | null {
-  try {
-    const testRaw = localStorage.getItem('test-user')
-    if (testRaw) {
-      const dev = JSON.parse(testRaw)
-      if (dev?.authenticated && dev?.email && dev?.role) {
-        const sessionAge = Date.now() - (dev.timestamp || 0)
-        if (sessionAge < 7 * 24 * 60 * 60 * 1000) {
-          return { id: dev.id || 'dev', email: dev.email, role: dev.role as UserRole }
-        }
-      }
-    }
-  } catch { /* ignore */ }
-
-  try {
-    const sbRaw = localStorage.getItem('supabase-user')
-    if (sbRaw) {
-      const u = JSON.parse(sbRaw)
-      if (u?.authenticated && u?.email && u?.role) {
-        const sessionAge = Date.now() - (u.timestamp || 0)
-        if (sessionAge < 7 * 24 * 60 * 60 * 1000) {
-          return { id: u.id || 'sb', email: u.email, role: u.role as UserRole }
-        }
-      }
-    }
-  } catch { /* ignore */ }
-
-  return null
-}
-
-/**
- * Текстовая метка для хлебных крошек
- */
-function breadcrumbLabel(tab: DashboardTab): string {
-  switch (tab) {
-    case 'overview':
-      return 'Обзор'
-    case 'generator':
-      return 'Генератор прайс-листов'
-    case 'labels':
-      return 'Генератор этикеток'
-    case 'upload':
-      return 'Загрузка файлов'
-    case 'materials':
-      return 'Управление материалами'
-    case 'products':
-      return 'Управление продукцией'
-    case 'collections':
-      return 'Управление коллекциями'
-    case 'types':
-      return 'Типы продукции'
-    case 'history':
-      return 'История изменений'
-    case 'users':
-      return 'Управление пользователями'
-    default:
-      return 'Обзор'
-  }
-}
-
-/**
- * Главная панель приложения
+ * Home: Main dashboard with navigation, auth-protected content and feature panels.
  */
 export default function Home() {
   const [user, setUser] = useState<UserWithRole | null>(null)
@@ -157,50 +67,32 @@ export default function Home() {
   const navigate = useNavigate()
 
   useEffect(() => {
-    void init()
+    void loadUser()
+    void loadStats()
   }, [])
 
-  /** Инициализация: пользователь и счётчики */
-  const init = async () => {
-    setLoading(true)
+  /**
+   * Load current user with role or redirect to login
+   */
+  const loadUser = async () => {
     try {
-      // 1) Попробуем взять локально
-      const local = readLocalUser()
-      if (local) {
-        setUser(local)
-      } else {
-        // 2) Иначе — текущий Supabase-пользователь
-        const sbUser = await getCurrentUser()
-        if (sbUser && sbUser.email) {
-          const role: UserRole = resolveRoleByEmail(sbUser.email)
-          const packed: UserWithRole = { id: sbUser.id, email: sbUser.email, role }
-          setUser(packed)
-          // Кэшируем для быстрого старта
-          localStorage.setItem(
-            'supabase-user',
-            JSON.stringify({
-              id: packed.id,
-              email: packed.email,
-              role: packed.role,
-              authenticated: true,
-              timestamp: Date.now(),
-            })
-          )
-        }
+      const currentUser = await getCurrentUserWithRole()
+      if (!currentUser) {
+        navigate('/login')
+        return
       }
-
-      // 3) Счётчики с защитой от отсутствующих таблиц
-      await loadStats()
-    } catch (e) {
-      // тихо, UI имеет пустые fallback'и
-      // eslint-disable-next-line no-console
-      console.warn('Home init warning:', e)
+      setUser(currentUser)
+    } catch (error) {
+      console.error('Error loading user:', error)
+      navigate('/login')
     } finally {
       setLoading(false)
     }
   }
 
-  /** Загрузка счётчиков (устойчиво к ошибкам) */
+  /**
+   * Load overview counters (resilient to missing tables)
+   */
   const loadStats = async () => {
     try {
       const [materialsResult, productsResult, collectionsResult, priceListsResult] = await Promise.all([
@@ -233,20 +125,22 @@ export default function Home() {
         priceLists: (priceListsResult as any).count || 0,
       })
     } catch (error) {
-      // eslint-disable-next-line no-console
       console.error('Error loading stats:', error)
       setStats({ materials: 0, products: 0, collections: 0, priceLists: 0 })
     }
   }
 
-  /** Выход из аккаунта */
+  /**
+   * Logout handler: clears local store and redirects to login
+   */
   const handleLogout = async () => {
     try {
       localStorage.removeItem('test-user')
       localStorage.removeItem('supabase-user')
       await supabase.auth.signOut()
       navigate('/login')
-    } catch {
+    } catch (error) {
+      console.error('Logout error:', error)
       localStorage.removeItem('test-user')
       localStorage.removeItem('supabase-user')
       navigate('/login')
@@ -261,12 +155,42 @@ export default function Home() {
     )
   }
 
+  /**
+   * Helper: returns label for breadcrumb by active tab
+   */
+  const breadcrumbLabel = (tab: DashboardTab): string => {
+    switch (tab) {
+      case 'overview':
+        return 'Обзор'
+      case 'generator':
+        return 'Генератор прайс-листов'
+      case 'labels':
+        return 'Генератор этикеток'
+      case 'upload':
+        return 'Загрузка файлов'
+      case 'materials':
+        return 'Управление материалами'
+      case 'products':
+        return 'Управление продукцией'
+      case 'collections':
+        return 'Управление коллекциями'
+      case 'types':
+        return 'Типы продукции'
+      case 'history':
+        return 'История изменений'
+      case 'users':
+        return 'Управление пользователями'
+      default:
+        return 'Обзор'
+    }
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header user={user as any} onLogout={handleLogout} />
+      <Header user={user} onLogout={handleLogout} />
 
       <main className="container mx-auto px-4 py-8">
-        {/* Заголовок + mobile logout */}
+        {/* Title area + mobile logout */}
         <div className="mb-8">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
@@ -287,7 +211,7 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Mobile навигация */}
+        {/* Mobile Navigation (select) */}
         <div className="flex lg:hidden mb-6">
           <Card className="w-full">
             <CardContent className="p-3">
@@ -303,7 +227,7 @@ export default function Home() {
                     <option value="generator">📄 Прайс-лист</option>
                     <option value="labels">🏷️ Этикетки</option>
                   </optgroup>
-                  {(user?.role === 'admin') && (
+                  {user?.role === 'admin' && (
                     <optgroup label="⚙️ Администрирование">
                       <option value="upload">📤 Загрузка</option>
                       <option value="materials">🗃️ Материалы</option>
@@ -320,7 +244,7 @@ export default function Home() {
           </Card>
         </div>
 
-        {/* Desktop навигация */}
+        {/* Desktop Navigation (custom buttons, no Tabs) */}
         <div className="hidden lg:block">
           <div className="space-y-6">
             <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
@@ -331,7 +255,7 @@ export default function Home() {
                       <h3 className="text-sm font-semibold text-gray-600 px-3 py-2">Основные</h3>
                     </div>
 
-                    {/* Кнопки */}
+                    {/* Main buttons */}
                     <div className="grid grid-cols-3 gap-1 p-0">
                       <button
                         onClick={() => setActiveTab('overview')}
@@ -364,8 +288,8 @@ export default function Home() {
                       </button>
                     </div>
 
-                    {/* Раздел администратора */}
-                    {(user?.role === 'admin') && (
+                    {/* Admin section */}
+                    {user?.role === 'admin' && (
                       <div className="mt-4">
                         <div className="flex items-center space-x-1 mb-2 px-3">
                           <h3 className="text-sm font-semibold text-gray-600">Администрирование</h3>
@@ -452,7 +376,7 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Хлебные крошки */}
+            {/* Breadcrumb */}
             <div className="mb-4">
               <div className="flex items-center space-x-2 text-sm">
                 <span className="text-gray-500">Главная</span>
@@ -461,11 +385,11 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Контент вкладок (desktop) */}
+            {/* Desktop content by activeTab */}
             <div className="space-y-6">
               {activeTab === 'overview' && (
                 <div className="space-y-6">
-                  {/* Метрики */}
+                  {/* Top metrics */}
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                     <Card className="bg-white border border-gray-200">
                       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -520,10 +444,10 @@ export default function Home() {
                     </Card>
                   </div>
 
-                  {/* Валюты */}
+                  {/* Currency rates widget */}
                   <CurrencyRates />
 
-                  {/* Быстрый старт */}
+                  {/* Quick start */}
                   <Card className="bg-white border border-gray-200">
                     <CardHeader>
                       <CardTitle className="flex items-center gap-2">
@@ -749,7 +673,7 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Mobile хлебные крошки + контент – зеркалим логику */}
+        {/* Mobile breadcrumb + content */}
         <div className="lg:hidden">
           <div className="mb-4">
             <div className="flex items-center space-x-2 text-sm">
@@ -759,8 +683,8 @@ export default function Home() {
             </div>
           </div>
 
+          {/* Mobile content mirrors desktop conditions */}
           <div className="space-y-6">
-            {/* Дальше — те же условия, что на десктопе */}
             {activeTab === 'overview' && (
               <div className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -817,6 +741,7 @@ export default function Home() {
                   </Card>
                 </div>
 
+                {/* Currency rates widget (mobile) */}
                 <CurrencyRates />
 
                 <Card className="bg-white border border-gray-200">
@@ -889,7 +814,6 @@ export default function Home() {
               </div>
             )}
 
-            {/* Остальные вкладки (mobile) */}
             {activeTab === 'upload' && (
               <Card className="bg-white border border-gray-200">
                 <CardHeader>
