@@ -1,0 +1,21 @@
+# Архитектурное игнорирование для оптимизации
+dist/
+build/
+node_modules/
+*.d.ts
+coverage/
+.next/
+
+# Конфигурационные файлы
+vite.config.ts
+tailwind.config.js
+postcss.config.js
+
+# Временные файлы
+*.log
+*.cache
+.env*
+
+# Сгенерированные файлы
+public/
+scripts/collect-metrics.ts

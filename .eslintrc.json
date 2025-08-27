@@ -5,8 +5,10 @@
     "node": true
   },
   "extends": [
-    "eslint:recommended"
+    "eslint:recommended",
+    "@typescript-eslint/recommended"
   ],
+  "parser": "@typescript-eslint/parser",
   "parserOptions": {
     "ecmaVersion": 2020,
     "sourceType": "module",
@@ -14,11 +16,17 @@
       "jsx": true
     }
   },
+  "plugins": [
+    "@typescript-eslint",
+    "react-refresh"
+  ],
   "rules": {
-    "no-unused-vars": "warn",
+    "@typescript-eslint/no-unused-vars": ["warn", { "argsIgnorePattern": "^_" }],
+    "@typescript-eslint/no-explicit-any": "warn",
+    "@typescript-eslint/explicit-function-return-type": "off",
+    "react-refresh/only-export-components": ["warn", { "allowConstantExport": true }],
     "no-console": "warn",
-    "prefer-const": "error",
-    "no-var": "error"
+    "prefer-const": "error"
   },
   "ignorePatterns": ["dist", "node_modules", "*.d.ts"]
 }
