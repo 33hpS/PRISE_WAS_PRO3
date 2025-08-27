@@ -1,63 +1,208 @@
 import * as React from "react"
-import { ChevronLeft, ChevronRight } from "lucide-react"
-import { DayPicker } from "react-day-picker"
+import { 
+  Tooltip as RechartsTooltip,
+  type TooltipProps,
+  ResponsiveContainer,
+  Legend,
+  type LegendProps
+} from "recharts"
 import { cn } from "@/lib/utils"
-import { buttonVariants } from "@/components/ui/button"
 
-export type CalendarProps = React.ComponentProps<typeof DayPicker>
-
-function Calendar({
-  className,
-  classNames,
-  showOutsideDays = true,
-  ...props
-}: CalendarProps) {
-  return (
-    <DayPicker
-      showOutsideDays={showOutsideDays}
-      className={cn("p-3", className)}
-      classNames={{
-        months: "flex flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0",
-        month: "space-y-4",
-        caption: "flex justify-center pt-1 relative items-center",
-        caption_label: "text-sm font-medium",
-        nav: "space-x-1 flex items-center",
-        nav_button: cn(
-          buttonVariants({ variant: "outline" }),
-          "h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100"
-        ),
-        nav_button_previous: "absolute left-1",
-        nav_button_next: "absolute right-1",
-        table: "w-full border-collapse space-y-1",
-        head_row: "flex",
-        head_cell:
-          "text-muted-foreground rounded-md w-9 font-normal text-[0.8rem]",
-        row: "flex w-full mt-2",
-        cell: "h-9 w-9 text-center text-sm p-0 relative [&:has([aria-selected].day-range-end)]:rounded-r-md [&:has([aria-selected].day-outside)]:bg-accent/50 [&:has([aria-selected])]:bg-accent first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md focus-within:relative focus-within:z-20",
-        day: cn(
-          buttonVariants({ variant: "ghost" }),
-          "h-9 w-9 p-0 font-normal aria-selected:opacity-100"
-        ),
-        day_range_end: "day-range-end",
-        day_selected:
-          "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground",
-        day_today: "bg-accent text-accent-foreground",
-        day_outside:
-          "day-outside text-muted-foreground opacity-50 aria-selected:bg-accent/50 aria-selected:text-muted-foreground aria-selected:opacity-30",
-        day_disabled: "text-muted-foreground opacity-50",
-        day_range_middle:
-          "aria-selected:bg-accent aria-selected:text-accent-foreground",
-        day_hidden: "invisible",
-        ...classNames,
-      }}
-      components={{
-        IconLeft: ({ ...props }) => <ChevronLeft className="h-4 w-4" />,
-        IconRight: ({ ...props }) => <ChevronRight className="h-4 w-4" />,
-      }}
-      {...props}
-    />
-  )
+// Конфигурация диаграммы с типизацией
+export interface ChartConfig {
+  [key: string]: {
+    label?: string;
+    icon?: React.ComponentType;
+    color?: string;
+    theme?: {
+      light?: string;
+      dark?: string;
+    };
+  };
 }
-Calendar.displayName = "Calendar"
 
-export { Calendar }
+// Контекст диаграммы
+interface ChartContextValue {
+  config: ChartConfig;
+}
+
+const ChartContext = React.createContext<ChartContextValue | null>(null);
+
+// Хук для использования контекста диаграммы
+export const useChart = (): ChartContextValue => {
+  const context = React.useContext(ChartContext);
+  if (!context) {
+    throw new Error("useChart must be used within a <ChartContainer />");
+  }
+  return context;
+};
+
+// Основной контейнер диаграммы
+interface ChartContainerProps extends React.HTMLAttributes<HTMLDivElement> {
+  config: ChartConfig;
+  children: React.ReactElement;
+}
+
+export const ChartContainer = React.forwardRef<HTMLDivElement, ChartContainerProps>(
+  ({ config, children, className, ...props }, ref) => {
+    const id = React.useId();
+    
+    const styles = React.useMemo(() => {
+      return Object.entries(config).reduce((acc, [key, value]) => {
+        if (value.color) {
+          acc.push(`#${id} .recharts-layer.${key} { fill: ${value.color}; }`);
+        }
+        if (value.theme?.light) {
+          acc.push(`#${id} .recharts-layer.${key} { fill: ${value.theme.light}; }`);
+        }
+        return acc;
+      }, [] as string[]);
+    }, [config, id]);
+
+    return (
+      <ChartContext.Provider value={{ config }}>
+        <div
+          ref={ref}
+          id={id}
+          className={cn("flex aspect-video justify-center text-xs", className)}
+          {...props}
+        >
+          {styles.length > 0 && (
+            <style dangerouslySetInnerHTML={{ __html: styles.join("\n") }} />
+          )}
+          <ResponsiveContainer width="100%" height="100%">
+            {children}
+          </ResponsiveContainer>
+        </div>
+      </ChartContext.Provider>
+    );
+  }
+);
+
+ChartContainer.displayName = "Chart";
+
+// Обертка для tooltip с правильной типизацией
+interface ChartTooltipContentProps extends Partial<TooltipProps<any, any>> {
+  className?: string;
+  hideLabel?: boolean;
+  hideIndicator?: boolean;
+  indicator?: "line" | "dot" | "dashed";
+  nameKey?: string;
+  labelKey?: string;
+}
+
+export const ChartTooltipContent = React.forwardRef<
+  HTMLDivElement,
+  ChartTooltipContentProps
+>(({ 
+  active, 
+  payload: tooltipPayload, 
+  label: tooltipLabel, 
+  className,
+  hideLabel,
+  hideIndicator,
+  ...props 
+}, ref) => {
+  const { config } = React.useContext(ChartContext) || { config: {} };
+
+  if (!active || !tooltipPayload || !Array.isArray(tooltipPayload)) {
+    return null;
+  }
+
+  return (
+    <div
+      ref={ref}
+      className={cn(
+        "grid min-w-[8rem] items-start gap-1.5 rounded-lg border border-border/50 bg-background px-2.5 py-1.5 text-xs shadow-xl",
+        className
+      )}
+    >
+      {!hideLabel && tooltipLabel && (
+        <div className="flex items-center gap-2">
+          <div className="font-medium">{tooltipLabel}</div>
+        </div>
+      )}
+      <div className="grid gap-1.5">
+        {tooltipPayload.map((item: any, index: number) => {
+          const configItem = config[item.dataKey || item.name] || {};
+          const value = 
+            typeof item.value === "number" 
+              ? item.value.toLocaleString()
+              : item.value;
+
+          return (
+            <div
+              key={index}
+              className="flex w-full items-center justify-between gap-2 text-xs"
+            >
+              <div className="flex items-center gap-1.5">
+                {!hideIndicator && (
+                  <div
+                    className="h-2.5 w-2.5 shrink-0 rounded-[2px]"
+                    style={{
+                      backgroundColor: item.color || configItem.color || "currentColor",
+                    }}
+                  />
+                )}
+                <div className="text-muted-foreground">
+                  {configItem.label || item.name}
+                </div>
+              </div>
+              <div className="font-mono font-medium tabular-nums text-foreground">
+                {value}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+});
+
+ChartTooltipContent.displayName = "ChartTooltipContent";
+
+// Компонент легенды с типизацией
+interface ChartLegendContentProps extends Omit<LegendProps, "content"> {
+  className?: string;
+  nameKey?: string;
+}
+
+export const ChartLegendContent = React.forwardRef<
+  HTMLDivElement,
+  ChartLegendContentProps
+>(({ className, payload, ...props }, ref) => {
+  const { config } = React.useContext(ChartContext) || { config: {} };
+
+  if (!payload || !Array.isArray(payload)) {
+    return null;
+  }
+
+  return (
+    <div
+      ref={ref}
+      className={cn("flex items-center justify-center gap-4", className)}
+    >
+      {payload.map((entry: any, index: number) => {
+        const configItem = config[entry.dataKey || entry.value] || {};
+        return (
+          <div key={index} className="flex items-center gap-1.5">
+            <div
+              className="h-3 w-3 shrink-0 rounded-sm"
+              style={{ backgroundColor: entry.color }}
+            />
+            <span className="text-xs text-muted-foreground">
+              {configItem.label || entry.value}
+            </span>
+          </div>
+        );
+      })}
+    </div>
+  );
+});
+
+ChartLegendContent.displayName = "ChartLegendContent";
+
+// Экспорты для обратной совместимости
+export const Chart = ChartContainer;
+export const ChartTooltip = ChartTooltipContent;
+export const ChartLegend = ChartLegendContent;
