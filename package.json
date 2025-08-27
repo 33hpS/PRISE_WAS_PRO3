@@ -12,7 +12,6 @@
     "preview": "vite preview",
     "type-check:watch": "tsc --noEmit --skipLibCheck --watch",
     "lint": "eslint src --ext ts,tsx --report-unused-disable-directives --max-warnings 100",
-    "lint:fix": "npm run lint -- --fix",
     "format:check": "prettier --check \"src/**/*.{ts,tsx,js,jsx,json,css,md}\" --config .prettierrc",
     "test": "echo \"Tests not configured yet\" && exit 0",
     "test:run": "echo \"Tests not configured yet\" && exit 0",
@@ -50,12 +49,13 @@
     "type-check:soft": "tsc --noEmit --skipLibCheck --allowJs --strict false",
     "lint:soft": "eslint src --ext ts,tsx --max-warnings 20",
     "build:force": "vite build --force",
-    "commit": "git add . && git-cz",
-    "push": "git push",
-    "pull": "git pull",
+    "lint:fix": "eslint . --fix",
     "format": "prettier --write .",
     "type-check": "tsc --noEmit",
-    "clean": "rimraf dist node_modules"
+    "clean": "rimraf dist node_modules",
+    "commit": "git add . && git commit",
+    "push": "git push",
+    "pull": "git pull"
   },
   "lint-staged": {
     "src/**/*.{ts,tsx}": [
