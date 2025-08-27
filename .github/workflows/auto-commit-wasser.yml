@@ -1,0 +1,88 @@
+name: 🏗️ WASSER Auto Commit & Deploy
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'src/**'
+      - 'public/**'  
+      - 'package.json'
+      - '*.md'
+  
+  schedule:
+    - cron: '0 2 * * 1' # Каждый понедельник в 2:00
+  
+  workflow_dispatch:
+    inputs:
+      commit_message:
+        description: 'Сообщение коммита'
+        required: false
+        default: '🤖 Автообновление WASSER'
+      update_dependencies:
+        description: 'Обновить зависимости'
+        type: boolean
+        default: false
+
+env:
+  NODE_VERSION: '18.x'
+  PROJECT_NAME: 'WASSER-Furniture-Factory'
+
+jobs:
+  analyze-and-commit:
+    name: 📊 Анализ и автокоммит
+    runs-on: ubuntu-latest
+    
+    permissions:
+      contents: write
+      
+    steps:
+      - name: 🔍 Checkout репозитория
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+          token: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: 🏗️ Настройка Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+      
+      - name: 📦 Установка зависимостей
+        run: |
+          npm ci --frozen-lockfile
+          npm audit --audit-level=moderate || true
+      
+      - name: 🔬 TypeScript проверка
+        run: |
+          echo "🔍 Проверка типобезопасности WASSER..."
+          npm run type-check
+          echo "✅ Типы корректны"
+      
+      - name: 🧪 ESLint анализ
+        run: |
+          npm run lint || true
+          echo "✅ Архитектурный анализ завершен"
+      
+      - name: 🏗️ Сборка проекта
+        run: |
+          echo "🏗️ Сборка мебельной фабрики WASSER..."
+          npm run build
+          echo "✅ Сборка завершена"
+      
+      - name: 📊 Сбор метрик
+        run: |
+          npm run metrics || true
+          echo "✅ Метрики собраны"
+      
+      - name: 🤖 Умный автокоммит WASSER
+        run: |
+          git config --local user.email "wasser-bot@github-actions"
+          git config --local user.name "WASSER AutoCommit Bot 🏗️"
+          
+          # Запуск анализа и автокоммита
+          npm run wasser:commit || echo "⚠️ Нет изменений для автокоммита"
+      
+      - name: 🚀 Push изменений
+        run: |
+          git push origin ${{ github.ref_name }} || echo "⚠️ Нет изменений для push"

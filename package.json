@@ -70,14 +70,23 @@
     "zustand": "^5.0.5"
   },
   "devDependencies": {
+    "@commitlint/cli": "^19.8.1",
+    "@commitlint/config-conventional": "^19.8.1",
+    "@types/node": "^24.3.0",
     "@types/react": "^18.3.17",
     "@types/react-dom": "^18.3.5",
     "autoprefixer": "^10.4.21",
+    "depcheck": "^1.4.7",
     "esbuild": "0.25.4",
     "esbuild-style-plugin": "^1.6.3",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.1.5",
+    "npm-check-updates": "^18.0.3",
     "postcss": "^8.5.3",
     "rimraf": "^6.0.1",
     "tailwindcss": "^3.4.17",
-    "tailwindcss-animate": "^1.0.7"
+    "tailwindcss-animate": "^1.0.7",
+    "ts-node": "^10.9.2",
+    "vite-bundle-analyzer": "^1.2.1"
   }
 }

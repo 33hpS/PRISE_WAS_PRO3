@@ -198,4 +198,4 @@ export default function App() {
       </div>
     </Router>
   )
-}
+}// Тест функциональной автоматизации WASSER

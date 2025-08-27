@@ -1,0 +1,139 @@
+{
+  "name": "wasser-furniture-factory",
+  "version": "1.0.0",
+  "description": "🏗️ Система управления мебельной фабрикой WASSER с типобезопасной архитектурой",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host",
+    "build": "tsc && vite build",
+    "build:analyze": "npm run build && npx vite-bundle-analyzer dist",
+    "build:dev": "vite build --mode development",
+    "preview": "vite preview",
+    
+    "type-check": "tsc --noEmit --skipLibCheck",
+    "type-check:watch": "tsc --noEmit --skipLibCheck --watch",
+    "lint": "eslint src --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
+    "lint:fix": "npm run lint -- --fix",
+    "format": "prettier --write \"src/**/*.{ts,tsx,js,jsx,json,css,md}\"",
+    "format:check": "prettier --check \"src/**/*.{ts,tsx,js,jsx,json,css,md}\"",
+    
+    "test": "vitest",
+    "test:run": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "test:ui": "vitest --ui",
+    
+    "setup:hooks": "husky install",
+    "setup:hooks:pre-commit": "husky add .husky/pre-commit \"npm run pre-commit\"",
+    "setup:hooks:pre-push": "husky add .husky/pre-push \"npm run pre-push\"",
+    "setup:hooks:commit-msg": "husky add .husky/commit-msg \"npx commitlint --edit $1\"",
+    "setup:complete": "npm run setup:hooks && npm run setup:hooks:pre-commit && npm run setup:hooks:pre-push && npm run setup:hooks:commit-msg",
+    
+    "pre-commit": "lint-staged && npm run type-check",
+    "pre-push": "npm run build && npm run test:run",
+    
+    "commit:auto": "tsx scripts/auto-commit.ts auto general 'Автообновление WASSER'",
+    "commit:components": "tsx scripts/auto-commit.ts feature components 'Обновление компонентов мебели'",
+    "commit:materials": "tsx scripts/auto-commit.ts refactor materials 'Рефакторинг системы материалов'",
+    "commit:pricing": "tsx scripts/auto-commit.ts fix pricing 'Исправление расчетов цен'",
+    "commit:pdf": "tsx scripts/auto-commit.ts feature pdf 'Улучшение PDF генерации'",
+    "commit:docs": "tsx scripts/auto-commit.ts docs general 'Обновление документации'",
+    "commit:dry": "tsx scripts/auto-commit.ts auto general 'Тест коммита' --dry-run",
+    
+    "wasser:commit": "tsx scripts/wasser-automation.ts commit",
+    "wasser:release": "tsx scripts/wasser-automation.ts release",
+    "wasser:maintenance": "tsx scripts/wasser-automation.ts maintenance",
+    "wasser:analyze": "tsx scripts/wasser-automation.ts analyze",
+    
+    "release:patch": "npm version patch --no-git-tag-version && npm run wasser:commit && git push",
+    "release:minor": "npm version minor --no-git-tag-version && npm run wasser:commit && git push",
+    "release:major": "npm version major --no-git-tag-version && npm run wasser:commit && git push",
+    
+    "metrics": "tsx scripts/collect-metrics.ts",
+    "analyze:bundle": "npm run build:analyze",
+    "analyze:deps": "depcheck && ncu --target minor",
+    "analyze:types": "npx type-coverage --detail --at-least 90",
+    
+    "clean": "rimraf dist build node_modules/.cache .tsbuildinfo",
+    "clean:install": "npm run clean && npm install",
+    "audit:fix": "npm audit fix",
+    "audit:check": "npm audit --audit-level moderate"
+  },
+  
+  "lint-staged": {
+    "src/**/*.{ts,tsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "src/**/*.{json,css,md}": [
+      "prettier --write"
+    ],
+    "*.{js,ts,tsx}": [
+      "npm run type-check"
+    ]
+  },
+  
+  "commitlint": {
+    "extends": ["@commitlint/config-conventional"],
+    "rules": {
+      "type-enum": [2, "always", [
+        "feat", "fix", "docs", "style", "refactor", 
+        "perf", "test", "chore", "build", "ci",
+        "🏗️", "🧩", "💰", "📄", "🔧", "🤖", "🎨", "🪑"
+      ]],
+      "scope-enum": [2, "always", [
+        "components", "materials", "pricing", "pdf", 
+        "api", "general", "collections", "types", "furniture"
+      ]],
+      "subject-case": [0]
+    }
+  },
+  
+  "dependencies": {
+    "@types/react": "^18.2.79",
+    "@types/react-dom": "^18.2.25",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-router-dom": "^6.22.3",
+    "@supabase/supabase-js": "^2.43.1",
+    "zustand": "^4.5.2",
+    "jspdf": "^2.5.1",
+    "lucide-react": "^0.376.0",
+    "clsx": "^2.1.1",
+    "tailwind-merge": "^2.3.0"
+  },
+  
+  "devDependencies": {
+    "@types/node": "^20.12.7",
+    "@typescript-eslint/eslint-plugin": "^7.7.1",
+    "@typescript-eslint/parser": "^7.7.1",
+    "@vitejs/plugin-react": "^4.2.1",
+    "autoprefixer": "^10.4.19",
+    "eslint": "^8.57.0",
+    "eslint-plugin-react": "^7.34.1",
+    "eslint-plugin-react-hooks": "^4.6.0",
+    "eslint-plugin-react-refresh": "^0.4.6",
+    "husky": "^9.0.11",
+    "lint-staged": "^15.2.2",
+    "@commitlint/cli": "^19.2.2",
+    "@commitlint/config-conventional": "^19.2.2",
+    "postcss": "^8.4.38",
+    "prettier": "^3.2.5",
+    "tailwindcss": "^3.4.3",
+    "typescript": "^5.4.5",
+    "vite": "^5.2.10",
+    "vite-bundle-analyzer": "^0.7.0",
+    "vitest": "^1.5.0",
+    "@vitest/coverage-v8": "^1.5.0",
+    "@vitest/ui": "^1.5.0",
+    "tsx": "^4.7.2",
+    "rimraf": "^5.0.5",
+    "depcheck": "^1.4.7",
+    "npm-check-updates": "^16.14.20",
+    "type-coverage": "^2.27.1"
+  },
+  
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  }
+}
