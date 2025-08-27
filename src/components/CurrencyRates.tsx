@@ -1,137 +1,179 @@
-/**
- * @file CurrencyRates.tsx - Функциональный компонент управления валютными курсами
- * Архитектура: React.memo + useMemo оптимизации для мебельной фабрики WASSER
- */
-import React, { useState, useEffect, useMemo, useCallback } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card'
-import { Button } from './ui/button'
-import { Badge } from './ui/badge'
-import { Loader2, TrendingUp, TrendingDown, RefreshCw } from 'lucide-react'
-import * as exchangeRateApi from '../services/forex'
+import React, { useState, useEffect, useMemo } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
 
-interface NormalizedRate {
-  code: string
-  name: string
-  rate: number
+// Типы для валют
+export type BaseCurrency = 'USD' | 'EUR' | 'CNY' | 'TRY';
+
+export interface CurrencyRate {
+  code: string;
+  name: string;
+  rate: number;
+  change: number;
+  flag?: string;
+  perUnit?: number;
 }
 
 interface CurrencyRatesProps {
-  compact?: boolean
+  rates?: Record<string, CurrencyRate>;
+  onRatesChange?: (rates: Record<string, CurrencyRate>) => void;
 }
 
-const CurrencyRates: React.FC<CurrencyRatesProps> = React.memo(({ compact = false }) => {
-  const [rates, setRates] = useState<NormalizedRate[]>([])
-  const [comparisonRates, setComparisonRates] = useState<NormalizedRate[]>([])
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [base, setBase] = useState('USD')
-  const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
+const CurrencyRates: React.FC<CurrencyRatesProps> = ({ rates: externalRates, onRatesChange }) => {
+  const [baseCurrency, setBaseCurrency] = useState<BaseCurrency>('USD');
+  const [customRates, setCustomRates] = useState<Record<string, number>>({
+    USD: 90.5,
+    EUR: 98.2,
+    CNY: 12.4,
+    TRY: 2.8
+  });
 
-  // Мемоизированные курсы для производительности
-  const displayRates = useMemo(() => {
-    const mainCurrencies = ['USD', 'EUR', 'RUB', 'KGS']
-    return rates.filter(rate => mainCurrencies.includes(rate.code))
-  }, [rates])
+  // Используем внешние rates если они переданы, иначе создаем на основе customRates
+  const rates = useMemo(() => {
+    if (externalRates) return externalRates;
+    
+    return Object.entries(customRates).reduce((acc, [code, rate]) => {
+      acc[code] = {
+        code,
+        name: getCurrencyName(code),
+        rate,
+        change: 0,
+        flag: getCurrencyFlag(code),
+        perUnit: code === 'CNY' || code === 'TRY' ? 10 : 1
+      };
+      return acc;
+    }, {} as Record<string, CurrencyRate>);
+  }, [externalRates, customRates]);
 
-  // Функциональная загрузка курсов
-  const loadRates = useCallback(async (targetBase: string) => {
-    setLoading(true)
-    setError(null)
-
-    try {
-      const fetchedRates = await exchangeRateApi.getRates(targetBase)
-      setRates(fetchedRates)
-      setLastUpdated(new Date())
-    } catch (err) {
-      setError('Ошибка загрузки курсов валют')
-      console.warn('Forex API error:', err)
-    } finally {
-      setLoading(false)
+  // Безопасное преобразование строки в BaseCurrency
+  const handleBaseCurrencyChange = (value: string) => {
+    if (isValidBaseCurrency(value)) {
+      setBaseCurrency(value);
     }
-  }, [])
+  };
 
-  // Эффект инициализации
-  useEffect(() => {
-    loadRates(base)
-  }, [base, loadRates])
+  // Type guard для проверки валидности BaseCurrency
+  const isValidBaseCurrency = (value: string): value is BaseCurrency => {
+    return ['USD', 'EUR', 'CNY', 'TRY'].includes(value);
+  };
 
-  // Функциональный рендер валюты
-  const renderCurrencyRate = useCallback(
-    (rate: NormalizedRate) => (
-      <div key={rate.code} className='flex justify-between items-center py-2 border-b'>
-        <div className='flex items-center space-x-2'>
-          <Badge variant='outline'>{rate.code}</Badge>
-          <span className='text-sm text-gray-600'>{rate.name}</span>
-        </div>
-        <div className='text-right'>
-          <span className='font-mono text-sm'>{rate.rate.toFixed(4)}</span>
-        </div>
-      </div>
-    ),
-    []
-  )
+  const getCurrencyName = (code: string): string => {
+    const names: Record<string, string> = {
+      USD: 'Доллар США',
+      EUR: 'Евро',
+      CNY: 'Юань',
+      TRY: 'Турецкая лира'
+    };
+    return names[code] || code;
+  };
 
-  if (compact) {
-    return (
-      <Card className='w-full'>
-        <CardHeader className='pb-2'>
-          <CardTitle className='text-lg'>Курсы валют</CardTitle>
-          <CardDescription>
-            {loading
-              ? 'Загрузка...'
-              : `Обновлено: ${lastUpdated?.toLocaleTimeString() || 'Не загружено'}`}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {error ? (
-            <div className='text-red-600 text-sm'>{error}</div>
-          ) : (
-            <div className='space-y-1'>{displayRates.slice(0, 3).map(renderCurrencyRate)}</div>
-          )}
-        </CardContent>
-      </Card>
-    )
-  }
+  const getCurrencyFlag = (code: string): string => {
+    const flags: Record<string, string> = {
+      USD: '🇺🇸',
+      EUR: '🇪🇺',
+      CNY: '🇨🇳',
+      TRY: '🇹🇷'
+    };
+    return flags[code] || '🏳️';
+  };
+
+  const handleRateChange = (currency: string, value: string) => {
+    const numValue = parseFloat(value) || 0;
+    setCustomRates(prev => ({
+      ...prev,
+      [currency]: numValue
+    }));
+
+    if (onRatesChange) {
+      const updatedRates = { ...rates };
+      if (updatedRates[currency]) {
+        updatedRates[currency].rate = numValue;
+      }
+      onRatesChange(updatedRates);
+    }
+  };
+
+  const getTrendIcon = (change: number) => {
+    if (change > 0) return <TrendingUp className="w-4 h-4 text-green-500" />;
+    if (change < 0) return <TrendingDown className="w-4 h-4 text-red-500" />;
+    return <Minus className="w-4 h-4 text-gray-400" />;
+  };
+
+  const convertedRates = useMemo(() => {
+    const baseRate = rates[baseCurrency]?.rate || 1;
+    return Object.entries(rates)
+      .filter(([code]) => code !== baseCurrency)
+      .map(([code, currency]) => ({
+        ...currency,
+        convertedRate: (currency.rate / baseRate).toFixed(4)
+      }));
+  }, [rates, baseCurrency]);
 
   return (
-    <Card className='w-full max-w-2xl mx-auto'>
+    <Card>
       <CardHeader>
-        <div className='flex justify-between items-center'>
-          <div>
-            <CardTitle>Валютные курсы</CardTitle>
-            <CardDescription>Актуальные курсы для мебельной фабрики WASSER</CardDescription>
-          </div>
-          <Button variant='outline' size='sm' onClick={() => loadRates(base)} disabled={loading}>
-            {loading ? (
-              <Loader2 className='h-4 w-4 animate-spin' />
-            ) : (
-              <RefreshCw className='h-4 w-4' />
-            )}
-          </Button>
-        </div>
+        <CardTitle>Курсы валют</CardTitle>
       </CardHeader>
-      <CardContent>
-        {error ? (
-          <div className='text-center py-8'>
-            <div className='text-red-600'>{error}</div>
-            <Button variant='outline' size='sm' className='mt-2' onClick={() => loadRates(base)}>
-              Повторить
-            </Button>
-          </div>
-        ) : (
-          <div className='space-y-2'>{displayRates.map(renderCurrencyRate)}</div>
-        )}
+      <CardContent className="space-y-4">
+        <div>
+          <Label htmlFor="base-currency">Базовая валюта</Label>
+          <Select value={baseCurrency} onValueChange={handleBaseCurrencyChange}>
+            <SelectTrigger id="base-currency">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="USD">🇺🇸 Доллар США</SelectItem>
+              <SelectItem value="EUR">🇪🇺 Евро</SelectItem>
+              <SelectItem value="CNY">🇨🇳 Юань</SelectItem>
+              <SelectItem value="TRY">🇹🇷 Турецкая лира</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
 
-        {lastUpdated && (
-          <div className='text-xs text-gray-500 mt-4 text-center'>
-            Последнее обновление: {lastUpdated.toLocaleString()}
+        <div className="space-y-3">
+          <h4 className="font-medium">Курсы к рублю:</h4>
+          {Object.entries(rates).map(([code, currency]) => (
+            <div key={code} className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <span className="text-2xl">{currency.flag}</span>
+                <div>
+                  <div className="font-medium">{currency.name}</div>
+                  <div className="text-sm text-gray-500">
+                    {currency.perUnit && currency.perUnit > 1 ? `за ${currency.perUnit} единиц` : 'за 1 единицу'}
+                  </div>
+                </div>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Input
+                  type="number"
+                  value={currency.rate}
+                  onChange={(e) => handleRateChange(code, e.target.value)}
+                  className="w-24 text-right"
+                  step="0.01"
+                />
+                {getTrendIcon(currency.change)}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {convertedRates.length > 0 && (
+          <div className="space-y-2 pt-4 border-t">
+            <h4 className="font-medium">Кросс-курсы к {getCurrencyName(baseCurrency)}:</h4>
+            {convertedRates.map(({ code, name, convertedRate, flag }) => (
+              <div key={code} className="flex justify-between text-sm">
+                <span>{flag} {name}</span>
+                <span className="font-mono">{convertedRate}</span>
+              </div>
+            ))}
           </div>
         )}
       </CardContent>
     </Card>
-  )
-})
+  );
+};
 
-CurrencyRates.displayName = 'CurrencyRates'
-
-export default CurrencyRates
+export default CurrencyRates;
