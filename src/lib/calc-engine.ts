@@ -331,23 +331,23 @@ export function calculateProductCost(params: {
   const roi = productionCost > 0 ? (grossProfit / productionCost) * 100 : 0
 
   // Логи в стиле документа
-  // eslint-disable-next-line no-console
+
   console.log(`🔄 CALCULATING COST FOR: ${product.name} (${product.article || '—'})`)
-  // eslint-disable-next-line no-console
+
   console.log(`💰 Production Cost Breakdown:`)
-  // eslint-disable-next-line no-console
+
   console.log(`   📦 Materials: ${bom.total.toFixed(2)} KGS`)
-  // eslint-disable-next-line no-console
+
   console.log(`   🎨 Paint: ${paint.total.toFixed(2)} KGS`)
-  // eslint-disable-next-line no-console
+
   console.log(`   🏭 TOTAL PRODUCTION: ${productionCost.toFixed(2)} KGS`)
-  // eslint-disable-next-line no-console
+
   console.log(`📈 Pricing Breakdown:`)
-  // eslint-disable-next-line no-console
+
   console.log(`   🔧 Labor Cost: ${labor.toFixed(2)} KGS`)
-  // eslint-disable-next-line no-console
+
   console.log(`   📊 Markup: ${markupPercent}%`)
-  // eslint-disable-next-line no-console
+
   console.log(`   💎 FINAL PRICE: ${finalPrice.toFixed(2)} KGS`)
 
   return {

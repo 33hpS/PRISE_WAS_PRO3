@@ -101,7 +101,7 @@ export default function MaterialsManager() {
     try {
       if (editingMaterial) {
         // Первая попытка: с type (если есть в форме)
-        let { error } = await supabase
+        const { error } = await supabase
           .from('materials')
           .update(formData)
           .eq('id', editingMaterial.id)
@@ -115,7 +115,7 @@ export default function MaterialsManager() {
         }
       } else {
         // Первая попытка: с type
-        let { error } = await supabase.from('materials').insert([formData])
+        const { error } = await supabase.from('materials').insert([formData])
         if (error && /type/i.test(error.message || '')) {
           const { type, ...safe } = formData as any
           const retry = await supabase.from('materials').insert([safe])
@@ -251,7 +251,7 @@ export default function MaterialsManager() {
 
         try {
           // Первая попытка — с type
-          let { error } = await supabase.from('materials').insert(chunk)
+          const { error } = await supabase.from('materials').insert(chunk)
           if (error && /type/i.test(error.message || '')) {
             // Если колонка type отсутствует — повторяем вставку без неё
             const chunkSafe = chunk.map(({ type, ...rest }) => rest)
@@ -611,4 +611,3 @@ export default function MaterialsManager() {
     </div>
   )
 }
-

@@ -3,44 +3,14 @@
   "rules": {
     "type-enum": [
       2,
-      "always",
+      "always", 
       [
-        "feat",
-        "fix",
-        "docs",
-        "style",
-        "refactor",
-        "perf",
-        "test",
-        "chore",
-        "build",
-        "ci",
-        "🏗️",
-        "🧩",
-        "💰",
-        "📄",
-        "🔧",
-        "🤖",
-        "🎨",
-        "🪑"
+        "feat", "fix", "docs", "style", "refactor", 
+        "perf", "test", "chore", "build", "ci"
       ]
     ],
-    "scope-enum": [
-      2,
-      "always",
-      [
-        "components",
-        "materials",
-        "pricing",
-        "pdf",
-        "api",
-        "general",
-        "collections",
-        "types",
-        "furniture"
-      ]
-    ],
-    "subject-case": [0],
+    "subject-empty": [0],
+    "type-empty": [0],
     "header-max-length": [2, "always", 100]
   }
 }
