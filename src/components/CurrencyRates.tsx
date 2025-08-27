@@ -1,300 +1,148 @@
 /**
- * CurrencyRates widget: shows latest exchange rates to selected base (KGS | USD),
- * with caching (10m), manual refresh, optional auto-refresh and delta indicators.
+ * @file CurrencyRates.tsx - Функциональный компонент управления валютными курсами
+ * Архитектура: React.memo + useMemo оптимизации для мебельной фабрики WASSER
  */
-
-import { useEffect, useMemo, useState, useTransition } from 'react'
-import { RefreshCw, ArrowUpRight, ArrowDownRight, AlertTriangle } from 'lucide-react'
-import { Card, CardContent, CardHeader, CardTitle } from './ui/card'
+import React, { useState, useEffect, useMemo, useCallback } from 'react'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card'
 import { Button } from './ui/button'
-import type { NormalizedRate, BaseCurrency } from '../services/forex'
-import { fetchRates, refreshRates } from '../services/forex'
+import { Badge } from './ui/badge'
+import { Loader2, TrendingUp, TrendingDown, RefreshCw } from 'lucide-react'
+import * as exchangeRateApi from '../services/forex'
 
-/**
- * Branded type for stable currency rows identity
- */
-type RateRowId = string & { readonly __brand: 'RateRowId' }
-
-/**
- * Local state shape with optional previous value for pseudo delta.
- */
-interface RateWithPrev extends NormalizedRate {
-  previous?: number
+interface NormalizedRate {
+  code: string;
+  name: string;
+  rate: number;
 }
 
-/**
- * Color palette per currency for better visual grouping
- */
-const tone: Record<string, { bg: string; border: string; text: string }> = {
-  USD: { bg: 'bg-green-50', border: 'border-green-200', text: 'text-green-800' },
-  EUR: { bg: 'bg-blue-50', border: 'border-blue-200', text: 'text-blue-800' },
-  RUB: { bg: 'bg-red-50', border: 'border-red-200', text: 'text-red-800' },
-  KZT: { bg: 'bg-teal-50', border: 'border-teal-200', text: 'text-teal-800' },
-  CNY: { bg: 'bg-rose-50', border: 'border-rose-200', text: 'text-rose-800' },
+interface CurrencyRatesProps {
+  compact?: boolean;
 }
 
-/**
- * Local storage keys
- */
-const BASE_KEY = 'forex-base'
-const AUTO_KEY = 'forex-auto'
+const CurrencyRates: React.FC<CurrencyRatesProps> = React.memo(({ compact = false }) => {
+  const [rates, setRates] = useState<NormalizedRate[]>([])
+  const [comparisonRates, setComparisonRates] = useState<NormalizedRate[]>([])
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [base, setBase] = useState('USD')
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
 
-/**
- * Format number with thin grouping and unit
- */
-function formatValue(value: number, base: BaseCurrency): string {
-  const formatted = new Intl.NumberFormat('ru-RU', { maximumFractionDigits: 2 }).format(value)
-  return `${formatted} ${base === 'KGS' ? 'сом' : 'USD'}`
-}
+  // Мемоизированные курсы для производительности
+  const displayRates = useMemo(() => {
+    const mainCurrencies = ['USD', 'EUR', 'RUB', 'KGS']
+    return rates.filter(rate => mainCurrencies.includes(rate.code))
+  }, [rates])
 
-/**
- * Map base label for title
- */
-function baseLabel(base: BaseCurrency): string {
-  return base === 'KGS' ? 'сомам' : 'доллару'
-}
+  // Функциональная загрузка курсов
+  const loadRates = useCallback(async (targetBase: string) => {
+    setLoading(true)
+    setError(null)
 
-/**
- * CurrencyRates component: fetches, caches and displays currency rates.
- */
-export default function CurrencyRates() {
-  const [rates, setRates] = useState<RateWithPrev[]>([])
-  const [updatedAt, setUpdatedAt] = useState<Date | null>(null)
-  const [error, setError] = useState<string>('')
-
-  // Smooth refresh without blocking UI
-  const [isPending, startTransition] = useTransition()
-
-  // Base currency selection and auto-refresh toggle
-  const [base, setBase] = useState<BaseCurrency>(() => {
-    const saved = localStorage.getItem(BASE_KEY) as BaseCurrency | null
-    return saved === 'USD' ? 'USD' : 'KGS'
-  })
-  const [auto, setAuto] = useState<boolean>(() => {
-    return localStorage.getItem(AUTO_KEY) === '1'
-  })
-
-  // Interval id guard
-  const [intervalId, setIntervalId] = useState<number | null>(null)
-
-  /**
-   * Initial load and whenever base changes
-   */
-  useEffect(() => {
-    let isMounted = true
-    ;(async () => {
-      try {
-        const data = fetchRates(base)
-        if (!isMounted) return
-        setRates(prev => mergeWithPrev(prev, data))
-        setUpdatedAt(new Date())
-        setError('')
-      } catch (e: any) {
-        setError(e?.message || 'Не удалось загрузить курсы валют')
-      }
-    })()
-    return () => {
-      isMounted = false
+    try {
+      const fetchedRates = await exchangeRateApi.getRates(targetBase)
+      setRates(fetchedRates)
+      setLastUpdated(new Date())
+    } catch (err) {
+      setError('Ошибка загрузки курсов валют')
+      console.warn('Forex API error:', err)
+    } finally {
+      setLoading(false)
     }
-  }, [base])
+  }, [])
 
-  /**
-   * Setup/cleanup auto-refresh interval
-   */
+  // Эффект инициализации
   useEffect(() => {
-    // Clear previous
-    if (intervalId) {
-      window.clearInterval(intervalId)
-      setIntervalId(null)
-    }
-    if (!auto) return
+    loadRates(base)
+  }, [base, loadRates])
 
-    // Every 10 minutes to match TTL
-    const id = window.setInterval(
-      () => {
-        startTransition(() => {
-          try {
-            const data = refreshRates(base)
-            setRates(prev => mergeWithPrev(prev, data))
-            setUpdatedAt(new Date())
-            setError('')
-          } catch (e: any) {
-            setError(e?.message || 'Ошибка автообновления курсов')
-          }
-        })
-      },
-      10 * 60 * 1000
+  // Функциональный рендер валюты
+  const renderCurrencyRate = useCallback((rate: NormalizedRate) => (
+    <div key={rate.code} className="flex justify-between items-center py-2 border-b">
+      <div className="flex items-center space-x-2">
+        <Badge variant="outline">{rate.code}</Badge>
+        <span className="text-sm text-gray-600">{rate.name}</span>
+      </div>
+      <div className="text-right">
+        <span className="font-mono text-sm">{rate.rate.toFixed(4)}</span>
+      </div>
+    </div>
+  ), [])
+
+  if (compact) {
+    return (
+      <Card className="w-full">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-lg">Курсы валют</CardTitle>
+          <CardDescription>
+            {loading ? 'Загрузка...' : `Обновлено: ${lastUpdated?.toLocaleTimeString() || 'Не загружено'}`}
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {error ? (
+            <div className="text-red-600 text-sm">{error}</div>
+          ) : (
+            <div className="space-y-1">
+              {displayRates.slice(0, 3).map(renderCurrencyRate)}
+            </div>
+          )}
+        </CardContent>
+      </Card>
     )
-
-    setIntervalId(id)
-    return () => {
-      window.clearInterval(id)
-    }
-  }, [auto, base])
-
-  /**
-   * Persist base/auto to storage when changed
-   */
-  useEffect(() => {
-    localStorage.setItem(BASE_KEY, base)
-  }, [base])
-  useEffect(() => {
-    localStorage.setItem(AUTO_KEY, auto ? '1' : '0')
-  }, [auto])
-
-  /**
-   * Merge new values with previous for local delta indicator
-   */
-  const mergeWithPrev = (prev: RateWithPrev[], next: NormalizedRate[]): RateWithPrev[] => {
-    const prevMap = new Map(prev.map(r => [r.code, r.perUnit]))
-    return next.map(n => ({
-      ...n,
-      previous: prevMap.get(n.code),
-    }))
   }
-
-  /**
-   * Manual refresh
-   */
-  const handleRefresh = () => {
-    startTransition(() => {
-      try {
-        const data = refreshRates(base)
-        setRates(prev => mergeWithPrev(prev, data))
-        setUpdatedAt(new Date())
-        setError('')
-      } catch (e: any) {
-        setError(e?.message || 'Ошибка обновления курсов валют')
-      }
-    })
-  }
-
-  /**
-   * Memoized rows for rendering performance
-   */
-  const rows = useMemo(() => {
-    return rates.map(r => {
-      const id = r.code as unknown as RateRowId
-      const delta = r.previous ? r.perUnit - r.previous : 0
-      const deltaIcon =
-        delta > 0.0001 ? (
-          <ArrowUpRight className='w-3 h-3 text-emerald-600' />
-        ) : delta < -0.0001 ? (
-          <ArrowDownRight className='w-3 h-3 text-red-600' />
-        ) : null
-
-      const palette = tone[r.code] || {
-        bg: 'bg-gray-50',
-        border: 'border-gray-200',
-        text: 'text-gray-800',
-      }
-
-      return (
-        <div
-          key={id}
-          className={`p-3 rounded-lg border ${palette.bg} ${palette.border} hover:shadow-sm transition-transform duration-200 hover:-translate-y-0.5`}
-          aria-label={`Курс ${r.name}`}
-        >
-          <div className='flex items-center justify-between'>
-            <div className='flex items-center gap-2'>
-              <span className='text-xl' aria-hidden>
-                {r.flag}
-              </span>
-              <div>
-                <div className={`text-sm font-semibold ${palette.text}`}>{r.code}</div>
-                <div className='text-xs text-gray-500'>{r.name}</div>
-              </div>
-            </div>
-            <div className='text-right'>
-              <div className='text-sm font-bold text-gray-900'>{formatValue(r.perUnit, base)}</div>
-              {deltaIcon && (
-                <div className='flex items-center justify-end gap-1 text-xs text-gray-500'>
-                  {deltaIcon}
-                  <span>
-                    {delta > 0 ? '+' : ''}
-                    {Math.abs(delta).toFixed(2)}
-                  </span>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )
-    })
-  }, [rates, base])
 
   return (
-    <Card className='bg-white border border-gray-200'>
-      <CardHeader className='flex items-center justify-between space-y-0'>
-        <CardTitle className='text-base font-semibold'>
-          Курсы валют к {baseLabel(base)} ({base})
-        </CardTitle>
-        <div className='flex items-center gap-2'>
-          <div className='hidden sm:flex items-center gap-1'>
-            <Button
-              variant='outline'
-              className={`bg-transparent h-8 px-3 ${base === 'KGS' ? 'bg-blue-50 border-blue-200 text-blue-700' : ''}`}
-              onClick={() => setBase('KGS')}
-              aria-label='Показывать в сомах (KGS)'
-            >
-              KGS
-            </Button>
-            <Button
-              variant='outline'
-              className={`bg-transparent h-8 px-3 ${base === 'USD' ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : ''}`}
-              onClick={() => setBase('USD')}
-              aria-label='Показывать в долларах (USD)'
-            >
-              USD
-            </Button>
+    <Card className="w-full max-w-2xl mx-auto">
+      <CardHeader>
+        <div className="flex justify-between items-center">
+          <div>
+            <CardTitle>Валютные курсы</CardTitle>
+            <CardDescription>
+              Актуальные курсы для мебельной фабрики WASSER
+            </CardDescription>
           </div>
           <Button
-            variant='outline'
-            onClick={() => setAuto(a => !a)}
-            className={`bg-transparent h-8 px-3 ${auto ? 'bg-amber-50 border-amber-200 text-amber-700' : ''}`}
-            aria-label='Переключить автообновление'
-            title='Автообновление каждые 10 минут'
+            variant="outline"
+            size="sm"
+            onClick={() => loadRates(base)}
+            disabled={loading}
           >
-            {auto ? 'Авто: Вкл' : 'Авто: Выкл'}
-          </Button>
-          <Button
-            variant='outline'
-            onClick={handleRefresh}
-            className='bg-transparent h-8 px-3'
-            aria-label='Обновить курсы валют'
-            title='Обновить сейчас'
-          >
-            <RefreshCw className={`w-4 h-4 ${isPending ? 'animate-spin' : ''}`} />
+            {loading ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <RefreshCw className="h-4 w-4" />
+            )}
           </Button>
         </div>
       </CardHeader>
       <CardContent>
         {error ? (
-          <div className='flex items-center gap-2 p-3 rounded-lg bg-yellow-50 border border-yellow-200 text-yellow-800 text-sm'>
-            <AlertTriangle className='w-4 h-4' />
-            {error}
-          </div>
-        ) : rates.length === 0 ? (
-          <div className='grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-3'>
-            {[1, 2, 3, 4, 5].map(i => (
-              <div
-                key={i}
-                className='p-3 rounded-lg border border-gray-200 bg-gray-50 animate-pulse h-[64px]'
-              />
-            ))}
+          <div className="text-center py-8">
+            <div className="text-red-600">{error}</div>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="mt-2"
+              onClick={() => loadRates(base)}
+            >
+              Повторить
+            </Button>
           </div>
         ) : (
-          <div>
-            <div className='grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-3'>{rows}</div>
-            {updatedAt && (
-              <div className='text-xs text-gray-500 mt-3'>
-                Обновлено: {updatedAt.toLocaleTimeString('ru-RU')}
-              </div>
-            )}
+          <div className="space-y-2">
+            {displayRates.map(renderCurrencyRate)}
+          </div>
+        )}
+        
+        {lastUpdated && (
+          <div className="text-xs text-gray-500 mt-4 text-center">
+            Последнее обновление: {lastUpdated.toLocaleString()}
           </div>
         )}
       </CardContent>
     </Card>
   )
-}
+})
 
+CurrencyRates.displayName = 'CurrencyRates'
+
+export default CurrencyRates
