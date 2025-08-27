@@ -54,7 +54,9 @@ export const useSyncStore = create<SyncState>((set, get) => ({
   setProgress: (value: number | null) => {
     // Нормируем в диапазон [0, 100] или null для indeterminate
     const v =
-      value === null ? null : Math.max(0, Math.min(100, Number.isFinite(value) ? (value as number) : 0))
+      value === null
+        ? null
+        : Math.max(0, Math.min(100, Number.isFinite(value) ? (value as number) : 0))
     set({ progress: v })
   },
 

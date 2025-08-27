@@ -42,7 +42,7 @@ export default function HeadManager({ title, description }: HeadManagerProps) {
     // Safety: remove Tailwind CDN script if present (must use local built CSS)
     document
       .querySelectorAll('script[src*="cdn.tailwindcss.com"]')
-      .forEach((el) => el.parentElement?.removeChild(el))
+      .forEach(el => el.parentElement?.removeChild(el))
 
     return () => {
       // Restore previous title on unmount

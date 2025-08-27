@@ -1,7 +1,7 @@
 /**
  * @file Dashboard.tsx
  * @description Панель управления WASSER - функциональная архитектура с типобезопасностью
- * 
+ *
  * Особенности:
  * - Мемоизированные компоненты и вычисления
  * - Строгая типизация всех интерфейсов
@@ -11,30 +11,23 @@
  * - Поддержка всех модулей включая рецепты окраски
  */
 
-import React, { 
-  useEffect, 
-  useState, 
-  useMemo, 
-  useCallback, 
-  memo, 
-  Suspense 
-} from 'react'
+import React, { useEffect, useState, useMemo, useCallback, memo, Suspense } from 'react'
 import { useNavigate } from 'react-router'
-import { 
-  Package, 
-  Settings, 
-  Upload, 
-  FileText, 
-  Database, 
-  Users, 
-  Eye, 
-  LogOut, 
-  Gauge, 
-  PaintBucket, 
-  Percent, 
-  Waves, 
+import {
+  Package,
+  Settings,
+  Upload,
+  FileText,
+  Database,
+  Users,
+  Eye,
+  LogOut,
+  Gauge,
+  PaintBucket,
+  Percent,
+  Waves,
   Boxes,
-  Loader2
+  Loader2,
 } from 'lucide-react'
 
 // UI Components
@@ -72,9 +65,9 @@ import { supabase } from '../lib/supabase'
 // ===========================
 
 /** Допустимые вкладки дашборда */
-type DashboardTab = 
+type DashboardTab =
   | 'overview'
-  | 'generator' 
+  | 'generator'
   | 'labels'
   | 'upload'
   | 'materials'
@@ -133,169 +126,169 @@ const TAB_DEFINITIONS: readonly TabDefinition[] = [
   {
     key: 'overview',
     label: 'Обзор',
-    icon: <Gauge className="w-4 h-4" />,
+    icon: <Gauge className='w-4 h-4' />,
     description: 'Общая статистика и быстрые действия',
     adminOnly: false,
-    component: memo(() => <OverviewContent />)
+    component: memo(() => <OverviewContent />),
   },
   {
     key: 'generator',
     label: 'Прайс-лист',
-    icon: <FileText className="w-4 h-4" />,
+    icon: <FileText className='w-4 h-4' />,
     description: 'Генерация прайс-листов в PDF',
     adminOnly: false,
     component: memo(() => (
       <Suspense fallback={<ComponentLoader />}>
         <PriceListGenerator />
       </Suspense>
-    ))
+    )),
   },
   {
     key: 'labels',
     label: 'Этикетки',
-    icon: <Package className="w-4 h-4" />,
+    icon: <Package className='w-4 h-4' />,
     description: 'Генерация этикеток для продукции',
     adminOnly: false,
-    component: memo(() => <div>Генератор этикеток (в разработке)</div>)
+    component: memo(() => <div>Генератор этикеток (в разработке)</div>),
   },
 
   // Административные вкладки
   {
     key: 'upload',
     label: 'Загрузка',
-    icon: <Upload className="w-4 h-4" />,
+    icon: <Upload className='w-4 h-4' />,
     description: 'Импорт данных из Excel файлов',
     adminOnly: true,
     component: memo(() => (
       <Suspense fallback={<ComponentLoader />}>
         <FileUpload />
       </Suspense>
-    ))
+    )),
   },
   {
     key: 'materials',
     label: 'Материалы',
-    icon: <Database className="w-4 h-4" />,
+    icon: <Database className='w-4 h-4' />,
     description: 'Управление базой материалов',
     adminOnly: true,
     component: memo(() => (
       <Suspense fallback={<ComponentLoader />}>
         <MaterialsManager />
       </Suspense>
-    ))
+    )),
   },
   {
     key: 'products',
     label: 'Продукция',
-    icon: <Package className="w-4 h-4" />,
+    icon: <Package className='w-4 h-4' />,
     description: 'Каталог изделий и техкарты',
     adminOnly: true,
     component: memo(() => (
       <Suspense fallback={<ComponentLoader />}>
         <ProductManager />
       </Suspense>
-    ))
+    )),
   },
   {
     key: 'collections',
     label: 'Коллекции',
-    icon: <Settings className="w-4 h-4" />,
+    icon: <Settings className='w-4 h-4' />,
     description: 'Управление коллекциями мебели',
     adminOnly: true,
     component: memo(() => (
       <Suspense fallback={<ComponentLoader />}>
         <CollectionsManager />
       </Suspense>
-    ))
+    )),
   },
   {
     key: 'types',
     label: 'Типы',
-    icon: <Settings className="w-4 h-4" />,
+    icon: <Settings className='w-4 h-4' />,
     description: 'Типы и виды продукции',
     adminOnly: true,
     component: memo(() => (
       <Suspense fallback={<ComponentLoader />}>
         <ProductTypesManager />
       </Suspense>
-    ))
+    )),
   },
 
   // 🎨 Специализированные модули
   {
     key: 'paint',
     label: 'Окраска',
-    icon: <PaintBucket className="w-4 h-4" />,
+    icon: <PaintBucket className='w-4 h-4' />,
     description: 'Рецепты окраски и покрытий',
     adminOnly: true,
     component: memo(() => (
       <Suspense fallback={<ComponentLoader />}>
         <PaintRecipesManager />
       </Suspense>
-    ))
+    )),
   },
   {
     key: 'markup',
     label: 'Наценка',
-    icon: <Percent className="w-4 h-4" />,
+    icon: <Percent className='w-4 h-4' />,
     description: 'Правила ценообразования',
     adminOnly: true,
     component: memo(() => (
       <Suspense fallback={<ComponentLoader />}>
         <MarkupRulesManager />
       </Suspense>
-    ))
+    )),
   },
   {
     key: 'sinks',
     label: 'Раковины',
-    icon: <Waves className="w-4 h-4" />,
+    icon: <Waves className='w-4 h-4' />,
     description: 'Каталог раковин и сантехники',
     adminOnly: true,
     component: memo(() => (
       <Suspense fallback={<ComponentLoader />}>
         <SinksManager />
       </Suspense>
-    ))
+    )),
   },
   {
     key: 'sets',
     label: 'Комплекты',
-    icon: <Boxes className="w-4 h-4" />,
+    icon: <Boxes className='w-4 h-4' />,
     description: 'Наборы и комплектация',
     adminOnly: true,
     component: memo(() => (
       <Suspense fallback={<ComponentLoader />}>
         <SetsManager />
       </Suspense>
-    ))
+    )),
   },
 
   // Системные вкладки
   {
     key: 'history',
     label: 'История',
-    icon: <Eye className="w-4 h-4" />,
+    icon: <Eye className='w-4 h-4' />,
     description: 'История изменений системы',
     adminOnly: true,
     component: memo(() => (
       <Suspense fallback={<ComponentLoader />}>
         <TechCardHistory />
       </Suspense>
-    ))
+    )),
   },
   {
     key: 'users',
     label: 'Пользователи',
-    icon: <Users className="w-4 h-4" />,
+    icon: <Users className='w-4 h-4' />,
     description: 'Управление пользователями и ролями',
     adminOnly: true,
     component: memo(() => (
       <Suspense fallback={<ComponentLoader />}>
         <UserManagement />
       </Suspense>
-    ))
-  }
+    )),
+  },
 ] as const
 
 // ===========================
@@ -306,10 +299,7 @@ const TAB_DEFINITIONS: readonly TabDefinition[] = [
 const LS_ACTIVE_TAB_KEY = 'wasser:dashboard:active-tab' as const
 
 /** Ключи администраторских email-адресов */
-const ADMIN_EMAILS = [
-  'sherhan1988hp@gmail.com',
-  'admin@wasser.com'
-] as const
+const ADMIN_EMAILS = ['sherhan1988hp@gmail.com', 'admin@wasser.com'] as const
 
 /** Начальное состояние дашборда */
 const INITIAL_STATE: DashboardState = {
@@ -318,7 +308,7 @@ const INITIAL_STATE: DashboardState = {
   statsLoading: true,
   user: null,
   loading: true,
-  error: null
+  error: null,
 } as const
 
 // ===========================
@@ -327,9 +317,9 @@ const INITIAL_STATE: DashboardState = {
 
 /** Индикатор загрузки компонента */
 const ComponentLoader: React.FC = memo(() => (
-  <div className="flex items-center justify-center p-8">
-    <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
-    <span className="ml-2 text-gray-600">Загрузка...</span>
+  <div className='flex items-center justify-center p-8'>
+    <Loader2 className='w-6 h-6 animate-spin text-blue-600' />
+    <span className='ml-2 text-gray-600'>Загрузка...</span>
   </div>
 ))
 
@@ -347,15 +337,16 @@ const TabButton: React.FC<TabButtonProps> = memo(({ tab, isActive, onClick }) =>
 
   return (
     <button
-      type="button"
+      type='button'
       onClick={handleClick}
       className={`
         inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium
         border rounded-md transition-all duration-200
         focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500
-        ${isActive
-          ? 'bg-blue-50 border-blue-200 text-blue-700 shadow-sm'
-          : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50 hover:border-gray-300'
+        ${
+          isActive
+            ? 'bg-blue-50 border-blue-200 text-blue-700 shadow-sm'
+            : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50 hover:border-gray-300'
         }
       `}
       title={tab.description}
@@ -373,53 +364,45 @@ const TabButton: React.FC<TabButtonProps> = memo(({ tab, isActive, onClick }) =>
 /** Контент вкладки "Обзор" */
 const OverviewContent: React.FC = memo(() => {
   return (
-    <div className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div className='space-y-6'>
+      <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4'>
         <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">
-              Материалов в базе
-            </CardTitle>
+          <CardHeader className='pb-2'>
+            <CardTitle className='text-sm font-medium text-gray-600'>Материалов в базе</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-blue-600">1,248</div>
-            <p className="text-xs text-gray-500 mt-1">Активных позиций</p>
+            <div className='text-2xl font-bold text-blue-600'>1,248</div>
+            <p className='text-xs text-gray-500 mt-1'>Активных позиций</p>
           </CardContent>
         </Card>
-        
+
         <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">
-              Изделий
-            </CardTitle>
+          <CardHeader className='pb-2'>
+            <CardTitle className='text-sm font-medium text-gray-600'>Изделий</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">342</div>
-            <p className="text-xs text-gray-500 mt-1">В каталоге</p>
+            <div className='text-2xl font-bold text-green-600'>342</div>
+            <p className='text-xs text-gray-500 mt-1'>В каталоге</p>
           </CardContent>
         </Card>
-        
+
         <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">
-              Коллекций
-            </CardTitle>
+          <CardHeader className='pb-2'>
+            <CardTitle className='text-sm font-medium text-gray-600'>Коллекций</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-purple-600">28</div>
-            <p className="text-xs text-gray-500 mt-1">Активных</p>
+            <div className='text-2xl font-bold text-purple-600'>28</div>
+            <p className='text-xs text-gray-500 mt-1'>Активных</p>
           </CardContent>
         </Card>
-        
+
         <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">
-              Прайс-листов
-            </CardTitle>
+          <CardHeader className='pb-2'>
+            <CardTitle className='text-sm font-medium text-gray-600'>Прайс-листов</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-orange-600">156</div>
-            <p className="text-xs text-gray-500 mt-1">Сгенерировано</p>
+            <div className='text-2xl font-bold text-orange-600'>156</div>
+            <p className='text-xs text-gray-500 mt-1'>Сгенерировано</p>
           </CardContent>
         </Card>
       </div>
@@ -427,33 +410,31 @@ const OverviewContent: React.FC = memo(() => {
       <Card>
         <CardHeader>
           <CardTitle>🚀 Быстрые действия</CardTitle>
-          <CardDescription>
-            Наиболее часто используемые функции
-          </CardDescription>
+          <CardDescription>Наиболее часто используемые функции</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            <Button variant="outline" className="justify-start h-auto p-4">
-              <FileText className="w-5 h-5 mr-3 text-blue-600" />
-              <div className="text-left">
-                <div className="font-medium">Создать прайс-лист</div>
-                <div className="text-sm text-gray-500">PDF с актуальными ценами</div>
+          <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'>
+            <Button variant='outline' className='justify-start h-auto p-4'>
+              <FileText className='w-5 h-5 mr-3 text-blue-600' />
+              <div className='text-left'>
+                <div className='font-medium'>Создать прайс-лист</div>
+                <div className='text-sm text-gray-500'>PDF с актуальными ценами</div>
               </div>
             </Button>
-            
-            <Button variant="outline" className="justify-start h-auto p-4">
-              <Upload className="w-5 h-5 mr-3 text-green-600" />
-              <div className="text-left">
-                <div className="font-medium">Загрузить данные</div>
-                <div className="text-sm text-gray-500">Импорт из Excel</div>
+
+            <Button variant='outline' className='justify-start h-auto p-4'>
+              <Upload className='w-5 h-5 mr-3 text-green-600' />
+              <div className='text-left'>
+                <div className='font-medium'>Загрузить данные</div>
+                <div className='text-sm text-gray-500'>Импорт из Excel</div>
               </div>
             </Button>
-            
-            <Button variant="outline" className="justify-start h-auto p-4">
-              <Package className="w-5 h-5 mr-3 text-purple-600" />
-              <div className="text-left">
-                <div className="font-medium">Новое изделие</div>
-                <div className="text-sm text-gray-500">Добавить в каталог</div>
+
+            <Button variant='outline' className='justify-start h-auto p-4'>
+              <Package className='w-5 h-5 mr-3 text-purple-600' />
+              <div className='text-left'>
+                <div className='font-medium'>Новое изделие</div>
+                <div className='text-sm text-gray-500'>Добавить в каталог</div>
               </div>
             </Button>
           </div>
@@ -535,7 +516,7 @@ const useDashboardTabs = (isAdmin: boolean) => {
       totalTabs: TAB_DEFINITIONS.length,
       availableTabs: availableTabs.length,
       tabKeys: availableTabs.map(t => t.key),
-      hiddenTabs: TAB_DEFINITIONS.filter(t => t.adminOnly && !isAdmin).map(t => t.key)
+      hiddenTabs: TAB_DEFINITIONS.filter(t => t.adminOnly && !isAdmin).map(t => t.key),
     })
 
     return availableTabs
@@ -547,18 +528,18 @@ const usePerformanceMetrics = (): PerformanceMetrics => {
   const [metrics, setMetrics] = useState<PerformanceMetrics>({
     loadTime: 0,
     tabSwitchTime: 0,
-    lastUpdate: new Date()
+    lastUpdate: new Date(),
   })
 
   useEffect(() => {
     const startTime = performance.now()
-    
+
     return () => {
       const endTime = performance.now()
       setMetrics(prev => ({
         ...prev,
         loadTime: endTime - startTime,
-        lastUpdate: new Date()
+        lastUpdate: new Date(),
       }))
     }
   }, [])
@@ -572,10 +553,10 @@ const usePerformanceMetrics = (): PerformanceMetrics => {
 
 /**
  * Dashboard - Главная панель управления WASSER
- * 
+ *
  * Функциональные особенности:
  * - Строгая типизация с TypeScript
- * - Мемоизация для оптимизации рендеринга  
+ * - Мемоизация для оптимизации рендеринга
  * - Ленивая загрузка компонентов
  * - Диагностика прав пользователя
  * - Автосохранение активной вкладки
@@ -583,19 +564,19 @@ const usePerformanceMetrics = (): PerformanceMetrics => {
  */
 const Dashboard: React.FC = memo(() => {
   const navigate = useNavigate()
-  
+
   // Состояние компонента
   const [state, setState] = useState<DashboardState>(INITIAL_STATE)
-  
+
   // Производительность
   const metrics = usePerformanceMetrics()
-  
+
   // Права пользователя с диагностикой
   const { isAdmin } = useUserPermissions(state.user)
-  
+
   // Доступные вкладки
   const availableTabs = useDashboardTabs(isAdmin)
-  
+
   // Активная вкладка с валидацией
   const activeTabDefinition = useMemo(() => {
     return availableTabs.find(tab => tab.key === state.activeTab) || availableTabs[0]
@@ -612,10 +593,10 @@ const Dashboard: React.FC = memo(() => {
       setState(prev => ({ ...prev, user, loading: false }))
     } catch (error) {
       console.error('Ошибка инициализации пользователя:', error)
-      setState(prev => ({ 
-        ...prev, 
+      setState(prev => ({
+        ...prev,
         error: 'Ошибка загрузки данных пользователя',
-        loading: false 
+        loading: false,
       }))
     }
   }, [])
@@ -623,18 +604,18 @@ const Dashboard: React.FC = memo(() => {
   /** Загрузка статистики */
   const loadStats = useCallback(async () => {
     setState(prev => ({ ...prev, statsLoading: true }))
-    
+
     try {
       // Симулируем загрузку статистики
       await new Promise(resolve => setTimeout(resolve, 1000))
-      
+
       const stats: DashboardStats = {
         materials: 1248,
-        products: 342, 
+        products: 342,
         collections: 28,
-        priceLists: 156
+        priceLists: 156,
       }
-      
+
       setState(prev => ({ ...prev, stats, statsLoading: false }))
     } catch (error) {
       console.error('Ошибка загрузки статистики:', error)
@@ -645,10 +626,10 @@ const Dashboard: React.FC = memo(() => {
   /** Смена активной вкладки */
   const handleTabChange = useCallback((tabKey: DashboardTab) => {
     const startTime = performance.now()
-    
+
     setState(prev => ({ ...prev, activeTab: tabKey }))
     localStorage.setItem(LS_ACTIVE_TAB_KEY, tabKey)
-    
+
     // Метрики переключения вкладки
     requestAnimationFrame(() => {
       const endTime = performance.now()
@@ -662,10 +643,10 @@ const Dashboard: React.FC = memo(() => {
       // Очистка локального хранилища
       const keysToRemove = ['test-user', 'supabase-user', LS_ACTIVE_TAB_KEY]
       keysToRemove.forEach(key => localStorage.removeItem(key))
-      
+
       // Выход из Supabase
       await supabase.auth.signOut()
-      
+
       navigate('/login')
     } catch (error) {
       console.error('Ошибка при выходе:', error)
@@ -675,14 +656,14 @@ const Dashboard: React.FC = memo(() => {
   }, [navigate])
 
   // ===========================
-  // 🎯 ЭФФЕКТЫ КОМПОНЕНТА  
+  // 🎯 ЭФФЕКТЫ КОМПОНЕНТА
   // ===========================
 
   /** Инициализация при монтировании */
   useEffect(() => {
     initializeUser()
     loadStats()
-    
+
     // Восстановление активной вкладки
     const savedTab = localStorage.getItem(LS_ACTIVE_TAB_KEY) as DashboardTab
     if (savedTab && TAB_DEFINITIONS.some(tab => tab.key === savedTab)) {
@@ -710,11 +691,11 @@ const Dashboard: React.FC = memo(() => {
   // Экран загрузки
   if (state.loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <Loader2 className="w-8 h-8 animate-spin text-blue-600 mx-auto mb-4" />
-          <div className="text-lg text-gray-600">Загрузка панели управления...</div>
-          <div className="text-sm text-gray-400 mt-2">WASSER Furniture Factory</div>
+      <div className='min-h-screen flex items-center justify-center bg-gray-50'>
+        <div className='text-center'>
+          <Loader2 className='w-8 h-8 animate-spin text-blue-600 mx-auto mb-4' />
+          <div className='text-lg text-gray-600'>Загрузка панели управления...</div>
+          <div className='text-sm text-gray-400 mt-2'>WASSER Furniture Factory</div>
         </div>
       </div>
     )
@@ -723,16 +704,14 @@ const Dashboard: React.FC = memo(() => {
   // Экран ошибки
   if (state.error) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <Card className="w-full max-w-md">
+      <div className='min-h-screen flex items-center justify-center bg-gray-50'>
+        <Card className='w-full max-w-md'>
           <CardHeader>
-            <CardTitle className="text-red-600">Ошибка загрузки</CardTitle>
+            <CardTitle className='text-red-600'>Ошибка загрузки</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-gray-600 mb-4">{state.error}</p>
-            <Button onClick={() => window.location.reload()}>
-              Перезагрузить страницу
-            </Button>
+            <p className='text-gray-600 mb-4'>{state.error}</p>
+            <Button onClick={() => window.location.reload()}>Перезагрузить страницу</Button>
           </CardContent>
         </Card>
       </div>
@@ -740,43 +719,41 @@ const Dashboard: React.FC = memo(() => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className='min-h-screen bg-gray-50'>
       {/* Шапка приложения */}
       <Header user={state.user} onLogout={handleLogout} />
-      
-      <main className="container mx-auto px-4 pb-10">
+
+      <main className='container mx-auto px-4 pb-10'>
         {/* Заголовок панели */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+        <div className='flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6'>
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">
-              Панель управления
-            </h1>
-            <p className="text-gray-600">
+            <h1 className='text-3xl font-bold text-gray-900'>Панель управления</h1>
+            <p className='text-gray-600'>
               Управление материалами, продукцией и генерация прайс-листов
             </p>
           </div>
-          
+
           {/* Мобильная кнопка выхода */}
-          <div className="sm:hidden">
+          <div className='sm:hidden'>
             <Button
-              variant="outline"
+              variant='outline'
               onClick={handleLogout}
-              className="w-full justify-center bg-transparent hover:bg-red-50 hover:border-red-200 hover:text-red-700"
+              className='w-full justify-center bg-transparent hover:bg-red-50 hover:border-red-200 hover:text-red-700'
             >
-              <LogOut className="w-4 h-4 mr-2" />
+              <LogOut className='w-4 h-4 mr-2' />
               Выйти
             </Button>
           </div>
         </div>
 
         {/* Статус подключения Supabase */}
-        <div className="mb-4">
+        <div className='mb-4'>
           <SupabaseStatus compact />
         </div>
 
         {/* Навигация по вкладкам */}
-        <div className="mb-6">
-          <div className="flex flex-wrap gap-2">
+        <div className='mb-6'>
+          <div className='flex flex-wrap gap-2'>
             {availableTabs.map(tab => (
               <TabButton
                 key={tab.key}
@@ -789,20 +766,20 @@ const Dashboard: React.FC = memo(() => {
         </div>
 
         {/* Хлебные крошки */}
-        <div className="mb-6">
-          <div className="flex items-center space-x-2 text-sm">
-            <span className="text-gray-500">Главная</span>
-            <span className="text-gray-400">/</span>
-            <span className="font-medium text-gray-900">
+        <div className='mb-6'>
+          <div className='flex items-center space-x-2 text-sm'>
+            <span className='text-gray-500'>Главная</span>
+            <span className='text-gray-400'>/</span>
+            <span className='font-medium text-gray-900'>
               {activeTabDefinition?.label || 'Неизвестная страница'}
             </span>
           </div>
         </div>
 
         {/* Контент активной вкладки */}
-        <div className="space-y-6">
+        <div className='space-y-6'>
           {activeTabDefinition?.adminOnly && !isAdmin ? (
-            <RoleGuard requiredRole="admin">
+            <RoleGuard requiredRole='admin'>
               <activeTabDefinition.component />
             </RoleGuard>
           ) : (
@@ -812,16 +789,18 @@ const Dashboard: React.FC = memo(() => {
 
         {/* Диагностическая информация (только в dev режиме) */}
         {process.env.NODE_ENV === 'development' && (
-          <div className="mt-8 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-            <h3 className="text-sm font-medium text-yellow-800 mb-2">
+          <div className='mt-8 p-4 bg-yellow-50 border border-yellow-200 rounded-lg'>
+            <h3 className='text-sm font-medium text-yellow-800 mb-2'>
               🔍 Диагностическая информация
             </h3>
-            <div className="text-xs text-yellow-700 space-y-1">
+            <div className='text-xs text-yellow-700 space-y-1'>
               <div>Пользователь: {state.user?.email || 'Не загружен'}</div>
               <div>Роль: {state.user?.role || 'Не определена'}</div>
               <div>Админ права: {isAdmin ? '✅ Да' : '❌ Нет'}</div>
               <div>Активная вкладка: {state.activeTab}</div>
-              <div>Доступно вкладок: {availableTabs.length} из {TAB_DEFINITIONS.length}</div>
+              <div>
+                Доступно вкладок: {availableTabs.length} из {TAB_DEFINITIONS.length}
+              </div>
               <div>Время загрузки: {metrics.loadTime.toFixed(2)}ms</div>
             </div>
           </div>

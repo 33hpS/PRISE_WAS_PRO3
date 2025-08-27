@@ -85,7 +85,7 @@ export default function MaterialAutocomplete(props: MaterialAutocompleteProps) {
       if (error) throw error
 
       const raw = (data || []) as any[]
-      const normalized: MaterialOption[] = raw.map((r) => ({
+      const normalized: MaterialOption[] = raw.map(r => ({
         id: r.id,
         name: r.name,
         article: r.article ?? null,
@@ -109,7 +109,7 @@ export default function MaterialAutocomplete(props: MaterialAutocompleteProps) {
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
     if (!q) return items
-    return items.filter((m) => {
+    return items.filter(m => {
       const nm = (m.name || '').toLowerCase()
       const art = (m.article || '').toLowerCase()
       return nm.includes(q) || art.includes(q)
@@ -129,12 +129,12 @@ export default function MaterialAutocomplete(props: MaterialAutocompleteProps) {
   }, [])
 
   return (
-    <div className="space-y-1.5" ref={wrapperRef}>
-      <Label className="block">{label}</Label>
-      <div className="relative">
+    <div className='space-y-1.5' ref={wrapperRef}>
+      <Label className='block'>{label}</Label>
+      <div className='relative'>
         <Input
           value={selected ? selected.name : query}
-          onChange={(e) => {
+          onChange={e => {
             onSelect(null)
             setQuery(e.target.value)
             setOpen(true)
@@ -145,14 +145,14 @@ export default function MaterialAutocomplete(props: MaterialAutocompleteProps) {
         />
         {allowClear && (selected || query) && (
           <button
-            type="button"
+            type='button'
             onClick={() => {
               setQuery('')
               onSelect(null)
             }}
-            className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-            aria-label="Очистить"
-            title="Очистить"
+            className='absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600'
+            aria-label='Очистить'
+            title='Очистить'
           >
             ×
           </button>
@@ -160,20 +160,20 @@ export default function MaterialAutocomplete(props: MaterialAutocompleteProps) {
 
         {/* Dropdown */}
         {open && (
-          <div className="absolute z-30 mt-1 w-full rounded-md border border-gray-200 bg-white shadow-lg max-h-64 overflow-auto">
+          <div className='absolute z-30 mt-1 w-full rounded-md border border-gray-200 bg-white shadow-lg max-h-64 overflow-auto'>
             {loading ? (
-              <div className="px-3 py-2 text-sm text-gray-500">Загрузка...</div>
+              <div className='px-3 py-2 text-sm text-gray-500'>Загрузка...</div>
             ) : error ? (
-              <div className="px-3 py-2 text-sm text-red-600">{error}</div>
+              <div className='px-3 py-2 text-sm text-red-600'>{error}</div>
             ) : filtered.length === 0 ? (
-              <div className="px-3 py-2 text-sm text-gray-500">Ничего не найдено</div>
+              <div className='px-3 py-2 text-sm text-gray-500'>Ничего не найдено</div>
             ) : (
-              <ul className="divide-y">
-                {filtered.slice(0, 50).map((m) => (
+              <ul className='divide-y'>
+                {filtered.slice(0, 50).map(m => (
                   <li key={m.id}>
                     <button
-                      type="button"
-                      className="w-full text-left px-3 py-2 hover:bg-gray-50 focus:bg-gray-50"
+                      type='button'
+                      className='w-full text-left px-3 py-2 hover:bg-gray-50 focus:bg-gray-50'
                       onClick={() => {
                         onSelect(m)
                         setOpen(false)
@@ -181,15 +181,15 @@ export default function MaterialAutocomplete(props: MaterialAutocompleteProps) {
                       }}
                       title={m.article ? `Артикул: ${m.article}` : undefined}
                     >
-                      <div className="flex items-center justify-between gap-3">
-                        <div className="truncate">
-                          <div className="font-medium text-gray-900 truncate">{m.name}</div>
-                          <div className="text-xs text-gray-500">
+                      <div className='flex items-center justify-between gap-3'>
+                        <div className='truncate'>
+                          <div className='font-medium text-gray-900 truncate'>{m.name}</div>
+                          <div className='text-xs text-gray-500'>
                             {(m.article && `арт. ${m.article} · `) || ''}
                             {(m.type || m.category || '').toString()}
                           </div>
                         </div>
-                        <div className="shrink-0 text-xs px-2 py-0.5 rounded-full border bg-gray-50 text-gray-700">
+                        <div className='shrink-0 text-xs px-2 py-0.5 rounded-full border bg-gray-50 text-gray-700'>
                           {priceUnit(m)}
                         </div>
                       </div>
@@ -204,11 +204,11 @@ export default function MaterialAutocomplete(props: MaterialAutocompleteProps) {
 
       {/* Selected price tag */}
       {selected && (
-        <div className="text-xs text-gray-600">
-          Цена материала: <span className="font-medium">{priceUnit(selected)}</span>
+        <div className='text-xs text-gray-600'>
+          Цена материала: <span className='font-medium'>{priceUnit(selected)}</span>
         </div>
       )}
-      {hint && <div className="text-xs text-gray-500">{hint}</div>}
+      {hint && <div className='text-xs text-gray-500'>{hint}</div>}
     </div>
   )
 }

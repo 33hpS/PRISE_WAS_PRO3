@@ -31,22 +31,22 @@ export default function App() {
     checkUser()
 
     // Подписка на события auth Supabase (для реальной авторизации)
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        try {
-          if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-            setUser(session?.user || null)
-          } else if (event === 'SIGNED_OUT') {
-            setUser(null)
-          }
-        } catch (err) {
-          console.error('Auth state change error:', err)
-          setError('Ошибка аутентификации')
-        } finally {
-          setLoading(false)
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
+      try {
+        if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+          setUser(session?.user || null)
+        } else if (event === 'SIGNED_OUT') {
+          setUser(null)
         }
+      } catch (err) {
+        console.error('Auth state change error:', err)
+        setError('Ошибка аутентификации')
+      } finally {
+        setLoading(false)
       }
-    )
+    })
 
     return () => {
       subscription?.unsubscribe()
@@ -108,16 +108,22 @@ export default function App() {
         const currentUser = await getCurrentUser()
         if (currentUser && currentUser.email) {
           let userRole = 'manager'
-          if (currentUser.email === 'sherhan1988hp@gmail.com' || currentUser.email === 'admin@wasser.com') {
+          if (
+            currentUser.email === 'sherhan1988hp@gmail.com' ||
+            currentUser.email === 'admin@wasser.com'
+          ) {
             userRole = 'admin'
           }
-          localStorage.setItem('supabase-user', JSON.stringify({
-            id: currentUser.id,
-            email: currentUser.email,
-            role: userRole,
-            authenticated: true,
-            timestamp: Date.now()
-          }))
+          localStorage.setItem(
+            'supabase-user',
+            JSON.stringify({
+              id: currentUser.id,
+              email: currentUser.email,
+              role: userRole,
+              authenticated: true,
+              timestamp: Date.now(),
+            })
+          )
           setUser({ id: currentUser.id, email: currentUser.email, role: userRole })
           setLoading(false)
           return
@@ -141,10 +147,10 @@ export default function App() {
   // Loading state
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <div className="text-lg text-gray-600">Загрузка...</div>
+      <div className='min-h-screen flex items-center justify-center bg-gray-50'>
+        <div className='text-center'>
+          <div className='animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4'></div>
+          <div className='text-lg text-gray-600'>Загрузка...</div>
         </div>
       </div>
     )
@@ -153,17 +159,17 @@ export default function App() {
   // Error state
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center max-w-md mx-auto p-6">
-          <div className="text-red-600 text-lg font-semibold mb-2">Ошибка загрузки</div>
-          <div className="text-gray-600 mb-4">{error}</div>
-          <button 
+      <div className='min-h-screen flex items-center justify-center bg-gray-50'>
+        <div className='text-center max-w-md mx-auto p-6'>
+          <div className='text-red-600 text-lg font-semibold mb-2'>Ошибка загрузки</div>
+          <div className='text-gray-600 mb-4'>{error}</div>
+          <button
             onClick={() => {
               setError(null)
               setLoading(true)
               checkUser()
             }}
-            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+            className='px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors'
           >
             Попробовать снова
           </button>
@@ -180,22 +186,22 @@ export default function App() {
   // Main application with routing
   return (
     <Router>
-      <div className="min-h-screen bg-gray-50">
+      <div className='min-h-screen bg-gray-50'>
         <HeadManager />
         <SyncStatusBar />
-        <Toaster position="top-right" />
-        
+        <Toaster position='top-right' />
+
         <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/login" element={<Login onLogin={checkUser} />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/collections" element={<Collections />} />
-          <Route path="/materials" element={<Materials />} />
-          <Route path="/products" element={<Products />} />
-          <Route path="/journal" element={<Journal />} />
-          <Route path="/about" element={<About />} />
+          <Route path='/' element={<Home />} />
+          <Route path='/login' element={<Login onLogin={checkUser} />} />
+          <Route path='/dashboard' element={<Dashboard />} />
+          <Route path='/collections' element={<Collections />} />
+          <Route path='/materials' element={<Materials />} />
+          <Route path='/products' element={<Products />} />
+          <Route path='/journal' element={<Journal />} />
+          <Route path='/about' element={<About />} />
         </Routes>
       </div>
     </Router>
   )
-}// Тест функциональной автоматизации WASSER
+} // Тест функциональной автоматизации WASSER

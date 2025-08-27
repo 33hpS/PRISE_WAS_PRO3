@@ -87,15 +87,22 @@ function seedCollections(productIds: string[]): SysCollection[] {
  */
 export function useSystemData() {
   const [products, setProducts] = useState<SysProduct[]>(() => read<SysProduct[]>(LS.products, []))
-  const [collections, setCollections] = useState<SysCollection[]>(() => read<SysCollection[]>(LS.collections, []))
+  const [collections, setCollections] = useState<SysCollection[]>(() =>
+    read<SysCollection[]>(LS.collections, [])
+  )
 
   /** Пин‑коллекции для виджета */
   const pinnedCollections = useMemo(
     () =>
       collections
-        .filter((c) => !!c.pinned)
-        .map((c) => ({ id: c.id, name: c.name, productIds: c.product_order, cover_url: c.cover_url })),
-    [collections],
+        .filter(c => !!c.pinned)
+        .map(c => ({
+          id: c.id,
+          name: c.name,
+          productIds: c.product_order,
+          cover_url: c.cover_url,
+        })),
+    [collections]
   )
 
   /** Метрики для панели */
@@ -105,7 +112,9 @@ export function useSystemData() {
       collections: collections.length,
       materials: (() => {
         try {
-          const raw = localStorage.getItem('wasser_materials') || localStorage.getItem('wasser_materials_data')
+          const raw =
+            localStorage.getItem('wasser_materials') ||
+            localStorage.getItem('wasser_materials_data')
           const list = raw ? (JSON.parse(raw) as unknown[]) : []
           return Array.isArray(list) ? list.length : 0
         } catch {
@@ -114,13 +123,13 @@ export function useSystemData() {
       })(),
       lastUpdate: Date.now(),
     }),
-    [products.length, collections.length],
+    [products.length, collections.length]
   )
 
   /** Наполнить демо‑данными */
   const seed = useCallback(() => {
     const p = seedProducts()
-    const c = seedCollections(p.map((x) => x.id))
+    const c = seedCollections(p.map(x => x.id))
     setProducts(p)
     setCollections(c)
     write(LS.products, p)

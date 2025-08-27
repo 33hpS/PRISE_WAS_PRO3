@@ -46,7 +46,11 @@ const LS_RECIPES = 'wasser_paint_recipes'
 /** Безопасный парс notes JSON */
 function parseNotes<T = any>(raw?: string | null): T | null {
   if (!raw) return null
-  try { return JSON.parse(raw) as T } catch { return null }
+  try {
+    return JSON.parse(raw) as T
+  } catch {
+    return null
+  }
 }
 
 /** Формат сом */
@@ -79,13 +83,15 @@ export default function PaintCostPanel({
   // Форма расчёта
   const [recipeId, setRecipeId] = useState<string>('')
   const [complexityName, setComplexityName] = useState<string>('Стандарт')
-  const [width, setWidth] = useState<number>(600)    // мм
-  const [height, setHeight] = useState<number>(800)  // мм
-  const [depth, setDepth] = useState<number>(150)    // мм
+  const [width, setWidth] = useState<number>(600) // мм
+  const [height, setHeight] = useState<number>(800) // мм
+  const [depth, setDepth] = useState<number>(150) // мм
   const [layers, setLayers] = useState<number>(2)
   const [loss, setLoss] = useState<number>(5)
 
-  useEffect(() => { void load() }, [])
+  useEffect(() => {
+    void load()
+  }, [])
 
   /**
    * Загрузка рецептов и сложностей.
@@ -97,7 +103,9 @@ export default function PaintCostPanel({
       // РЕЦЕПТЫ
       const { data, error } = await supabase
         .from('paint_recipes')
-        .select('id, name, finish_type, price_per_m2, cost_per_g, consumption_g_per_m2, notes, base, hardener, thinner')
+        .select(
+          'id, name, finish_type, price_per_m2, cost_per_g, consumption_g_per_m2, notes, base, hardener, thinner'
+        )
         .order('name')
       if (error) {
         // fallback LS
@@ -107,7 +115,11 @@ export default function PaintCostPanel({
       } else {
         setRecipes(data || [])
         // параллельно поддержим локальный кеш
-        try { localStorage.setItem(LS_RECIPES, JSON.stringify(data || [])) } catch {/* noop */}
+        try {
+          localStorage.setItem(LS_RECIPES, JSON.stringify(data || []))
+        } catch {
+          /* noop */
+        }
       }
 
       // СЛОЖНОСТИ (необязательная таблица)
@@ -117,20 +129,29 @@ export default function PaintCostPanel({
           .select('id, name, coeff')
           .order('coeff')
         if (!e2 && cmx && cmx.length > 0) {
-          const normalized = cmx.map((c: any) => ({ id: c.id, name: c.name, coeff: Number(c.coeff) || 1 }))
+          const normalized = cmx.map((c: any) => ({
+            id: c.id,
+            name: c.name,
+            coeff: Number(c.coeff) || 1,
+          }))
           setComplexities(normalized)
           if (!normalized.find(c => c.name === complexityName)) {
             setComplexityName(normalized[0].name)
           }
         }
-      } catch { /* ignore */ }
+      } catch {
+        /* ignore */
+      }
     } finally {
       setLoading(false)
     }
   }
 
   /** Выбранный рецепт и сложность */
-  const selectedRecipe = useMemo(() => recipes.find(r => r.id === recipeId) || null, [recipes, recipeId])
+  const selectedRecipe = useMemo(
+    () => recipes.find(r => r.id === recipeId) || null,
+    [recipes, recipeId]
+  )
   const selectedComplexity = useMemo(
     () => complexities.find(c => c.name === complexityName) || { name: 'Стандарт', coeff: 1 },
     [complexities, complexityName]
@@ -171,25 +192,25 @@ export default function PaintCostPanel({
   }, [selectedRecipe])
 
   if (loading) {
-    return <div className="p-4 text-gray-600">Загрузка рецептов...</div>
+    return <div className='p-4 text-gray-600'>Загрузка рецептов...</div>
   }
 
   return (
-    <Card className="bg-white border border-gray-200">
+    <Card className='bg-white border border-gray-200'>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <PaintBucket className="w-5 h-5" />
+        <CardTitle className='flex items-center gap-2'>
+          <PaintBucket className='w-5 h-5' />
           Расчёт покраски
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className='space-y-4'>
         {/* Выбор рецепта и сложности */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
           <div>
             <Label>Рецепт</Label>
             <Select value={recipeId} onValueChange={setRecipeId}>
               <SelectTrigger>
-                <SelectValue placeholder="Выберите рецепт" />
+                <SelectValue placeholder='Выберите рецепт' />
               </SelectTrigger>
               <SelectContent>
                 {recipes.map(r => (
@@ -219,71 +240,99 @@ export default function PaintCostPanel({
 
         {/* Инфо о рецепте */}
         {selectedRecipe ? (
-          <div className="flex flex-wrap items-center gap-2 text-sm">
-            <Badge variant="secondary">{selectedRecipe.finish_type || 'Покрытие'}</Badge>
-            <Badge variant="outline">A:B:Th = {ratioStr}</Badge>
-            <Badge variant="outline">
-              Расход: {selectedRecipe.consumption_g_per_m2 ? `${selectedRecipe.consumption_g_per_m2} г/м²` : '—'}
+          <div className='flex flex-wrap items-center gap-2 text-sm'>
+            <Badge variant='secondary'>{selectedRecipe.finish_type || 'Покрытие'}</Badge>
+            <Badge variant='outline'>A:B:Th = {ratioStr}</Badge>
+            <Badge variant='outline'>
+              Расход:{' '}
+              {selectedRecipe.consumption_g_per_m2
+                ? `${selectedRecipe.consumption_g_per_m2} г/м²`
+                : '—'}
             </Badge>
-            <Badge className="bg-blue-50 text-blue-800 border border-blue-200">
+            <Badge className='bg-blue-50 text-blue-800 border border-blue-200'>
               Цена м²: {kgs(effectivePricePerM2)}
             </Badge>
           </div>
         ) : (
-          <div className="text-sm text-gray-500">Выберите рецепт для расчёта.</div>
+          <div className='text-sm text-gray-500'>Выберите рецепт для расчёта.</div>
         )}
 
         {/* Геометрия */}
-        <div className="rounded-lg border p-3">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <div className='rounded-lg border p-3'>
+          <div className='grid grid-cols-1 md:grid-cols-3 gap-3'>
             <div>
               <Label>Ширина, мм</Label>
-              <Input type="number" min="1" value={width} onChange={e => setWidth(Number(e.target.value) || 0)} />
+              <Input
+                type='number'
+                min='1'
+                value={width}
+                onChange={e => setWidth(Number(e.target.value) || 0)}
+              />
             </div>
             <div>
               <Label>Высота, мм</Label>
-              <Input type="number" min="1" value={height} onChange={e => setHeight(Number(e.target.value) || 0)} />
+              <Input
+                type='number'
+                min='1'
+                value={height}
+                onChange={e => setHeight(Number(e.target.value) || 0)}
+              />
             </div>
             <div>
               <Label>Глубина, мм</Label>
-              <Input type="number" min="1" value={depth} onChange={e => setDepth(Number(e.target.value) || 0)} />
+              <Input
+                type='number'
+                min='1'
+                value={depth}
+                onChange={e => setDepth(Number(e.target.value) || 0)}
+              />
             </div>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-3">
+          <div className='grid grid-cols-1 md:grid-cols-3 gap-3 mt-3'>
             <div>
               <Label>Слоёв</Label>
-              <Input type="number" min="1" value={layers} onChange={e => setLayers(Number(e.target.value) || 0)} />
+              <Input
+                type='number'
+                min='1'
+                value={layers}
+                onChange={e => setLayers(Number(e.target.value) || 0)}
+              />
             </div>
             <div>
               <Label>Потери, %</Label>
-              <Input type="number" min="0" value={loss} onChange={e => setLoss(Number(e.target.value) || 0)} />
+              <Input
+                type='number'
+                min='0'
+                value={loss}
+                onChange={e => setLoss(Number(e.target.value) || 0)}
+              />
             </div>
-            <div className="flex items-end">
-              <div className="text-sm text-gray-600">
-                Площадь: <span className="font-semibold">{areaM2.toFixed(3)}</span> м²
+            <div className='flex items-end'>
+              <div className='text-sm text-gray-600'>
+                Площадь: <span className='font-semibold'>{areaM2.toFixed(3)}</span> м²
               </div>
             </div>
           </div>
         </div>
 
         {/* Итог и действия */}
-        <div className="rounded-lg border p-3 bg-gray-50">
-          <div className="flex items-center gap-2 text-gray-700">
-            <Calculator className="w-4 h-4" />
+        <div className='rounded-lg border p-3 bg-gray-50'>
+          <div className='flex items-center gap-2 text-gray-700'>
+            <Calculator className='w-4 h-4' />
             Итоговая стоимость покраски:
-            <span className="font-semibold text-green-700">{kgs(finalCost)}</span>
+            <span className='font-semibold text-green-700'>{kgs(finalCost)}</span>
           </div>
 
-          <div className="mt-3 flex flex-wrap gap-2">
+          <div className='mt-3 flex flex-wrap gap-2'>
             <Button
               disabled={!selectedRecipe || finalCost <= 0}
               onClick={() => onApplyAdd && onApplyAdd(finalCost)}
-              className="bg-blue-600 hover:bg-blue-700"
+              className='bg-blue-600 hover:bg-blue-700'
             >
               Добавить к себестоимости
             </Button>
             <Button
-              variant="outline"
+              variant='outline'
               disabled={!selectedRecipe || finalCost <= 0}
               onClick={() => onApplyReplace && onApplyReplace(finalCost)}
             >
@@ -291,9 +340,9 @@ export default function PaintCostPanel({
             </Button>
           </div>
 
-          <div className="text-xs text-gray-500 mt-2">
-            Формула: (
-            {effectivePricePerM2 > 0 ? 'цена м²' : 'цена/г × расход'} × коэффициент сложности × (1 + потери%) × площадь × слои).
+          <div className='text-xs text-gray-500 mt-2'>
+            Формула: ({effectivePricePerM2 > 0 ? 'цена м²' : 'цена/г × расход'} × коэффициент
+            сложности × (1 + потери%) × площадь × слои).
           </div>
         </div>
       </CardContent>

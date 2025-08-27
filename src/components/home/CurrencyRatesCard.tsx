@@ -61,23 +61,23 @@ export default function CurrencyRatesCard(): JSX.Element {
   const title = useMemo(() => `Курсы валют (${base})`, [base])
 
   return (
-    <Card className="bg-white border border-gray-200">
-      <CardHeader className="flex items-center justify-between space-y-0">
-        <CardTitle className="text-base font-semibold">{title}</CardTitle>
-        <div className="flex items-center gap-2">
+    <Card className='bg-white border border-gray-200'>
+      <CardHeader className='flex items-center justify-between space-y-0'>
+        <CardTitle className='text-base font-semibold'>{title}</CardTitle>
+        <div className='flex items-center gap-2'>
           <div
-            className="inline-flex rounded-lg border border-gray-200 overflow-hidden"
-            role="tablist"
-            aria-label="Выбор базовой валюты"
+            className='inline-flex rounded-lg border border-gray-200 overflow-hidden'
+            role='tablist'
+            aria-label='Выбор базовой валюты'
           >
-            {(['KGS', 'USD'] as BaseCurrency[]).map((b) => {
+            {(['KGS', 'USD'] as BaseCurrency[]).map(b => {
               const active = base === b
               return (
                 <button
                   key={b}
                   onClick={() => setBase(b)}
                   className={`px-2.5 py-1.5 text-xs ${active ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-50'}`}
-                  role="tab"
+                  role='tab'
                   aria-selected={active}
                 >
                   {b}
@@ -85,23 +85,40 @@ export default function CurrencyRatesCard(): JSX.Element {
               )
             })}
           </div>
-          <Button variant="outline" className="bg-transparent h-8 px-3" onClick={onRefresh} aria-label="Обновить курсы" disabled={state === 'loading'}>
+          <Button
+            variant='outline'
+            className='bg-transparent h-8 px-3'
+            onClick={onRefresh}
+            aria-label='Обновить курсы'
+            disabled={state === 'loading'}
+          >
             {state === 'loading' ? 'Обновление…' : 'Обновить'}
           </Button>
         </div>
       </CardHeader>
       <CardContent>
-        {state === 'error' && <div className="text-sm text-rose-700 bg-rose-50 border border-rose-200 rounded p-2">{error}</div>}
-        <div className="grid grid-cols-3 gap-3">
-          {rates.map((r) => (
-            <div key={r.code} className="rounded-lg border border-gray-200 bg-gray-50 p-3 text-center">
-              <div className="text-xs text-gray-500">{r.flag} {r.code}</div>
-              <div className="text-lg font-bold text-gray-900">{r.perUnit.toFixed(2)}</div>
+        {state === 'error' && (
+          <div className='text-sm text-rose-700 bg-rose-50 border border-rose-200 rounded p-2'>
+            {error}
+          </div>
+        )}
+        <div className='grid grid-cols-3 gap-3'>
+          {rates.map(r => (
+            <div
+              key={r.code}
+              className='rounded-lg border border-gray-200 bg-gray-50 p-3 text-center'
+            >
+              <div className='text-xs text-gray-500'>
+                {r.flag} {r.code}
+              </div>
+              <div className='text-lg font-bold text-gray-900'>{r.perUnit.toFixed(2)}</div>
             </div>
           ))}
         </div>
         {updatedAt && (
-          <div className="text-xs text-gray-500 mt-3">Обновлено: {new Date(updatedAt).toLocaleString('ru-RU')}</div>
+          <div className='text-xs text-gray-500 mt-3'>
+            Обновлено: {new Date(updatedAt).toLocaleString('ru-RU')}
+          </div>
         )}
       </CardContent>
     </Card>

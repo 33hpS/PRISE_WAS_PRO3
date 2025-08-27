@@ -38,7 +38,11 @@ export function getMixturePricePerGram(recipe?: PaintRecipeLike | null): number 
  * Площадь поверхности параллелепипеда (в м²).
  * Если какая-либо сторона отсутствует/некорректна — возвращает 0.
  */
-export function surfaceAreaM2(widthMm?: number | null, heightMm?: number | null, depthMm?: number | null): number {
+export function surfaceAreaM2(
+  widthMm?: number | null,
+  heightMm?: number | null,
+  depthMm?: number | null
+): number {
   const w = (Number(widthMm) || 0) / 1000
   const h = (Number(heightMm) || 0) / 1000
   const d = (Number(depthMm) || 0) / 1000
@@ -54,7 +58,7 @@ export function surfaceAreaM2(widthMm?: number | null, heightMm?: number | null,
  *   pricePerM2 = pricePerG * consumption
  * Далее:
  *   withComplexity = pricePerM2 * complexity
- *   withLoss = withComplexity * (1 + loss%) 
+ *   withLoss = withComplexity * (1 + loss%)
  *   total = withLoss * area * layers
  */
 export function computePaintCost(params: {

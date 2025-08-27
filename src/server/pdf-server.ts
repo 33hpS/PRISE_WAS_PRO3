@@ -24,8 +24,8 @@ function htmlBase(content: string, template: TemplateType): string {
     template === 'modern'
       ? `<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">`
       : template === 'nordic'
-      ? `<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">`
-      : `<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&family=Roboto:wght@400;700&display=swap" rel="stylesheet">`
+        ? `<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">`
+        : `<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&family=Roboto:wght@400;700&display=swap" rel="stylesheet">`
 
   return `<!doctype html>
 <html lang="ru">
@@ -145,7 +145,12 @@ function executiveCss(): string {
 
 /** Утилита: безопасный HTML */
 function esc(str: string): string {
-  return (str || '').toString().replace(/[<&>"]/g, (m) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;' } as any)[m])
+  return (str || '')
+    .toString()
+    .replace(
+      /[<&>"]/g,
+      m => (({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;' }) as any)[m]
+    )
 }
 
 /** Построение Modern контента (2 страницы) */
@@ -177,12 +182,16 @@ function renderModernHTML(data: any): string {
         <div class="meta-item"><span>Статус:</span><span class="meta-badge">АКТУАЛЬНЫЙ</span></div>
       </div>
     </div>
-    ${documentData.specialOffer ? `
+    ${
+      documentData.specialOffer
+        ? `
       <div class="notification-bar">
         <div class="notification-icon">🎯</div>
         <div class="notification-text">${esc(documentData.specialOffer)}</div>
       </div>
-    ` : ''}
+    `
+        : ''
+    }
 
     ${(() => {
       // группировка по config.groupBy если нужно
@@ -190,21 +199,31 @@ function renderModernHTML(data: any): string {
       const groupMap: Record<string, any[]> = {}
       ;(products || []).forEach((p: any) => {
         const key =
-          by === 'collection' ? (p.collection || 'Без коллекции') :
-          by === 'type' ? (p.type || 'Без типа') :
-          by === 'category' ? (p.category || 'Без категории') : 'Все товары'
+          by === 'collection'
+            ? p.collection || 'Без коллекции'
+            : by === 'type'
+              ? p.type || 'Без типа'
+              : by === 'category'
+                ? p.category || 'Без категории'
+                : 'Все товары'
         if (!groupMap[key]) groupMap[key] = []
         groupMap[key].push(p)
       })
       let idx = 0
-      return Object.entries(groupMap).map(([groupName, list]) => {
-        idx++
-        const rows = (list as any[]).map((it, i) => {
-          const price = (it.base_price || 0)
-          const matBadges = (it.material || '').split('/').filter(Boolean).map((m: string) => `<span class="material-badge">${esc(m.trim())}</span>`).join('')
-          const typeCube = `<div class="cell-visual">${esc(it.type || '-')}</div>`
-          const colorBadge = `<div class="cell-color"><span class="color-sample" style="background:#fff;"></span><span>${esc(it.color || '-')}</span></div>`
-          return `
+      return Object.entries(groupMap)
+        .map(([groupName, list]) => {
+          idx++
+          const rows = (list as any[])
+            .map((it, i) => {
+              const price = it.base_price || 0
+              const matBadges = (it.material || '')
+                .split('/')
+                .filter(Boolean)
+                .map((m: string) => `<span class="material-badge">${esc(m.trim())}</span>`)
+                .join('')
+              const typeCube = `<div class="cell-visual">${esc(it.type || '-')}</div>`
+              const colorBadge = `<div class="cell-color"><span class="color-sample" style="background:#fff;"></span><span>${esc(it.color || '-')}</span></div>`
+              return `
             <tr>
               <td class="cell-article">${esc(it.article || '-')}</td>
               <td>${esc(it.name || '-')}</td>
@@ -215,18 +234,23 @@ function renderModernHTML(data: any): string {
               <td class="cell-price">${price.toLocaleString('ru-RU')}</td>
             </tr>
           `
-        }).join('')
-        return `
+            })
+            .join('')
+          return `
           <div class="catalog-section">
-            ${by !== 'none' ? `
+            ${
+              by !== 'none'
+                ? `
               <div class="catalog-header">
-                <div class="catalog-index">${String(idx).padStart(2,'0')}</div>
+                <div class="catalog-index">${String(idx).padStart(2, '0')}</div>
                 <div class="catalog-info">
                   <div class="catalog-title">${esc(groupName)}</div>
                   <div class="catalog-subtitle">Сгруппировано по "${esc(by)}"</div>
                 </div>
               </div>
-            ` : ''}
+            `
+                : ''
+            }
             <table class="data-table">
               <thead>
                 <tr>
@@ -243,7 +267,8 @@ function renderModernHTML(data: any): string {
             </table>
           </div>
         `
-      }).join('')
+        })
+        .join('')
     })()}
 
     <div class="footer">© ${new Date().getFullYear()} ${esc(companyData.name)} • ${esc(companyData.tagline)}</div>
@@ -254,18 +279,22 @@ function renderModernHTML(data: any): string {
       <div style="text-align:center;margin-bottom:12px;font-weight:800;color:#1a1a2e;">УСЛОВИЯ СОТРУДНИЧЕСТВА</div>
       <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;">
         ${[
-          ['Ценообразование','Цены в KGS с НДС. Корректировка с уведомлением за 14 дней.'],
-          ['Оплата','Дилеры: по договору. Розница: 100% предоплата.'],
-          ['Сроки','Склад: 3 дня. Под заказ: 14–21 день.'],
-          ['Логистика','Бишкек: бесплатно от 30 000 сом. Регионы КР: по тарифам ТК.'],
-          ['Гарантия','24 месяца. Постгарантийное обслуживание.'],
-          ['Партнерство','Индивидуальные условия и маркетинговая поддержка.'],
-        ].map(([t,d]) => `
+          ['Ценообразование', 'Цены в KGS с НДС. Корректировка с уведомлением за 14 дней.'],
+          ['Оплата', 'Дилеры: по договору. Розница: 100% предоплата.'],
+          ['Сроки', 'Склад: 3 дня. Под заказ: 14–21 день.'],
+          ['Логистика', 'Бишкек: бесплатно от 30 000 сом. Регионы КР: по тарифам ТК.'],
+          ['Гарантия', '24 месяца. Постгарантийное обслуживание.'],
+          ['Партнерство', 'Индивидуальные условия и маркетинговая поддержка.'],
+        ]
+          .map(
+            ([t, d]) => `
           <div style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:14px;">
             <div style="font-size:12px;font-weight:800;margin-bottom:6px;">${esc(t)}</div>
             <div style="font-size:11px;color:#4a5568;line-height:1.5;">${esc(d)}</div>
           </div>
-        `).join('')}
+        `
+          )
+          .join('')}
       </div>
     </div>
     <div style="display:grid;grid-template-columns:auto 1fr auto;gap:16px;align-items:center;margin-top:16px;background:linear-gradient(135deg,#667eea,#764ba2);padding:14px;border-radius:14px;color:#fff;">
@@ -302,7 +331,9 @@ function renderNordicHTML(data: any): string {
       <div class="doc-date">Действителен с ${esc(documentData.date)}</div>
     </div>
     <div class="intro">Представляем актуальный прайс‑лист на продукцию мебельной фабрики ${esc(companyData.name)}.</div>
-    ${(products || []).map((p: any) => `
+    ${(products || [])
+      .map(
+        (p: any) => `
       <div class="product-section">
         <div class="section-header">
           <div class="section-line"></div>
@@ -334,7 +365,9 @@ function renderNordicHTML(data: any): string {
           </tbody>
         </table>
       </div>
-    `).join('')}
+    `
+      )
+      .join('')}
     <div class="page-number">1 / 2</div>
   </div>
   <div class="pdf-page">
@@ -346,18 +379,22 @@ function renderNordicHTML(data: any): string {
     <div style="padding:18px;background:#fafbfc;border-radius:12px;">
       <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px;font-size:11px;color:#7f8c8d;">
         ${[
-          ['Цены','KGS с НДС. Изменения с уведомлением за 14 дней.'],
-          ['Оплата','Дилеры — по договору. Розница — 100% предоплата.'],
-          ['Сроки','В наличии — 3 дня. Под заказ — 14–21 день.'],
-          ['Доставка','Бишкек — от 30 000 сом бесплатно. Регионы — по тарифам ТК.'],
-          ['Гарантия','24 месяца.'],
-          ['Партнерство','Спецусловия для дилеров.'],
-        ].map(([t, d]) => `
+          ['Цены', 'KGS с НДС. Изменения с уведомлением за 14 дней.'],
+          ['Оплата', 'Дилеры — по договору. Розница — 100% предоплата.'],
+          ['Сроки', 'В наличии — 3 дня. Под заказ — 14–21 день.'],
+          ['Доставка', 'Бишкек — от 30 000 сом бесплатно. Регионы — по тарифам ТК.'],
+          ['Гарантия', '24 месяца.'],
+          ['Партнерство', 'Спецусловия для дилеров.'],
+        ]
+          .map(
+            ([t, d]) => `
           <div style="display:flex;gap:10px;line-height:1.6;">
             <div>●</div>
             <div><strong>${esc(t)}</strong> ${esc(d)}</div>
           </div>
-        `).join('')}
+        `
+          )
+          .join('')}
       </div>
     </div>
     <div style="text-align:center;margin-top:18px;">
@@ -405,7 +442,9 @@ function renderExecutiveHTML(data: any): string {
         </tr>
       </thead>
       <tbody>
-        ${(products || []).map((p: any) => `
+        ${(products || [])
+          .map(
+            (p: any) => `
           <tr>
             <td class="article">${esc(p.article || '-')}</td>
             <td>${esc(p.name || '-')}</td>
@@ -415,7 +454,9 @@ function renderExecutiveHTML(data: any): string {
             <td>${esc(p.color || '-')}</td>
             <td class="price">${(p.base_price || 0).toLocaleString('ru-RU')}</td>
           </tr>
-        `).join('')}
+        `
+          )
+          .join('')}
       </tbody>
     </table>
     <div class="page-number">Страница 1 из 2</div>
@@ -441,9 +482,11 @@ function renderExecutiveHTML(data: any): string {
 /** Построитель HTML по шаблону */
 function buildHtml(template: TemplateType, data: any): string {
   const content =
-    template === 'modern' ? renderModernHTML(data)
-    : template === 'nordic' ? renderNordicHTML(data)
-    : renderExecutiveHTML(data)
+    template === 'modern'
+      ? renderModernHTML(data)
+      : template === 'nordic'
+        ? renderNordicHTML(data)
+        : renderExecutiveHTML(data)
   return htmlBase(content, template)
 }
 
@@ -466,7 +509,11 @@ async function start() {
       })
       const page = await browser.newPage()
       await page.setContent(html, { waitUntil: 'networkidle0' })
-      const pdfBuffer = await page.pdf({ format: 'A4', printBackground: true, margin: { top: 0, right: 0, bottom: 0, left: 0 } })
+      const pdfBuffer = await page.pdf({
+        format: 'A4',
+        printBackground: true,
+        margin: { top: 0, right: 0, bottom: 0, left: 0 },
+      })
       await browser.close()
 
       res.setHeader('Content-Type', 'application/pdf')

@@ -10,7 +10,7 @@ import MaterialsManager from '../components/MaterialsManager'
  */
 export default function MaterialsPage(): JSX.Element {
   return (
-    <div className="max-w-6xl mx-auto px-6 py-8">
+    <div className='max-w-6xl mx-auto px-6 py-8'>
       <MaterialsManager />
     </div>
   )

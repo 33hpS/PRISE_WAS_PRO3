@@ -26,7 +26,10 @@ export interface PdfServerOptions {
 /**
  * Вызов серверной генерации PDF.
  */
-export async function generateServerPdf(payload: PdfServerPayload, options?: PdfServerOptions): Promise<Blob> {
+export async function generateServerPdf(
+  payload: PdfServerPayload,
+  options?: PdfServerOptions
+): Promise<Blob> {
   const baseUrl = options?.baseUrl || '/api/pdf'
   const controller = new AbortController()
   const to = setTimeout(() => controller.abort(), options?.timeout || 30000)

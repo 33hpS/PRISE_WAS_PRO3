@@ -132,10 +132,12 @@ export async function parseTechCardFromArrayBuffer(buffer: ArrayBuffer): Promise
     for (let c = range.s.c; c <= range.e.c; c++) {
       rowValues.push(vStr((ws as any)[XLSX.utils.encode_cell({ r, c })]?.v))
     }
-    const lower = rowValues.map((s) => s.toLowerCase())
+    const lower = rowValues.map(s => s.toLowerCase())
 
-    const hasName = lower.some((s) => s.includes('наимен') || s.includes('материал'))
-    const hasQty = lower.some((s) => s.includes('количество') || s.includes('кол-во') || s.includes('qty'))
+    const hasName = lower.some(s => s.includes('наимен') || s.includes('материал'))
+    const hasQty = lower.some(
+      s => s.includes('количество') || s.includes('кол-во') || s.includes('qty')
+    )
     if (hasName && hasQty) {
       headerRow = r
       rowValues.forEach((h, idx) => {
@@ -143,8 +145,10 @@ export async function parseTechCardFromArrayBuffer(buffer: ArrayBuffer): Promise
         if (s.includes('артик')) map.article = idx
         else if (s.includes('наимен') || s.includes('материал')) map.name = idx
         else if (s.includes('примеч')) map.note = idx
-        else if (s.includes('коэф')) map.coef = idx // "Коэф-т"
-        else if (s.includes('кол')) map.qty = idx // "Количество в заказе"
+        else if (s.includes('коэф'))
+          map.coef = idx // "Коэф-т"
+        else if (s.includes('кол'))
+          map.qty = idx // "Количество в заказе"
         else if (s.includes('ед') || s.includes('изм')) map.unit = idx
       })
       break
@@ -154,7 +158,10 @@ export async function parseTechCardFromArrayBuffer(buffer: ArrayBuffer): Promise
   const materials: TechCardMaterial[] = []
   if (headerRow >= 0) {
     for (let r = headerRow + 1; r <= range.e.r; r++) {
-      const name = map.name !== undefined ? vStr((ws as any)[XLSX.utils.encode_cell({ r, c: map.name })]?.v) : ''
+      const name =
+        map.name !== undefined
+          ? vStr((ws as any)[XLSX.utils.encode_cell({ r, c: map.name })]?.v)
+          : ''
       const isEmptyRow = !name
       if (isEmptyRow) {
         // stop on two consecutive empty rows
@@ -166,11 +173,22 @@ export async function parseTechCardFromArrayBuffer(buffer: ArrayBuffer): Promise
         continue
       }
 
-      const article = map.article !== undefined ? vStr((ws as any)[XLSX.utils.encode_cell({ r, c: map.article })]?.v) : ''
-      const note = map.note !== undefined ? vStr((ws as any)[XLSX.utils.encode_cell({ r, c: map.note })]?.v) : ''
-      const unit = map.unit !== undefined ? vStr((ws as any)[XLSX.utils.encode_cell({ r, c: map.unit })]?.v) : ''
-      const coefRaw = map.coef !== undefined ? (ws as any)[XLSX.utils.encode_cell({ r, c: map.coef })]?.v : ''
-      const qtyRaw = map.qty !== undefined ? (ws as any)[XLSX.utils.encode_cell({ r, c: map.qty })]?.v : ''
+      const article =
+        map.article !== undefined
+          ? vStr((ws as any)[XLSX.utils.encode_cell({ r, c: map.article })]?.v)
+          : ''
+      const note =
+        map.note !== undefined
+          ? vStr((ws as any)[XLSX.utils.encode_cell({ r, c: map.note })]?.v)
+          : ''
+      const unit =
+        map.unit !== undefined
+          ? vStr((ws as any)[XLSX.utils.encode_cell({ r, c: map.unit })]?.v)
+          : ''
+      const coefRaw =
+        map.coef !== undefined ? (ws as any)[XLSX.utils.encode_cell({ r, c: map.coef })]?.v : ''
+      const qtyRaw =
+        map.qty !== undefined ? (ws as any)[XLSX.utils.encode_cell({ r, c: map.qty })]?.v : ''
 
       const coef = Number.isFinite(vNum(coefRaw)) ? Math.max(0, vNum(coefRaw)) : 1
       const baseQty = Number.isFinite(vNum(qtyRaw)) ? Math.max(0, vNum(qtyRaw)) : 0
@@ -234,17 +252,21 @@ export async function parseXLSXMaterials(input: File | ArrayBuffer): Promise<Par
     for (let c = range.s.c; c <= range.e.c; c++) {
       row.push(vStr((sheet as any)[XLSX.utils.encode_cell({ r, c })]?.v))
     }
-    const low = row.map((s) => s.toLowerCase())
-    const hasName = low.some((s) => s.includes('наимен') || s.includes('материал') || s.includes('name'))
-    const hasPrice = low.some((s) => s.includes('цена') || s.includes('стоим') || s.includes('price'))
+    const low = row.map(s => s.toLowerCase())
+    const hasName = low.some(
+      s => s.includes('наимен') || s.includes('материал') || s.includes('name')
+    )
+    const hasPrice = low.some(s => s.includes('цена') || s.includes('стоим') || s.includes('price'))
     if (hasName && hasPrice) {
       headerRow = r
       row.forEach((h, idx) => {
         const s = h.toLowerCase()
         if (s.includes('артик')) map.article = idx
         else if (s.includes('наимен') || s.includes('материал') || s === 'name') map.name = idx
-        else if ((s.includes('ед') && s.includes('изм')) || s === 'ед.' || s === 'unit') map.unit = idx
-        else if (s.includes('цена') || s.includes('стоим') || s === 'price' || s.includes('сом')) map.price = idx
+        else if ((s.includes('ед') && s.includes('изм')) || s === 'ед.' || s === 'unit')
+          map.unit = idx
+        else if (s.includes('цена') || s.includes('стоим') || s === 'price' || s.includes('сом'))
+          map.price = idx
         else if (s.includes('катег') || s.includes('тип') || s === 'category') map.category = idx
       })
       break
@@ -274,11 +296,15 @@ export async function parseXLSXMaterials(input: File | ArrayBuffer): Promise<Par
   const out: ParsedMaterialRow[] = []
   for (let r = headerRow + 1; r <= range.e.r; r++) {
     const name =
-      map.name !== undefined ? vStr((sheet as any)[XLSX.utils.encode_cell({ r, c: map.name })]?.v) : ''
+      map.name !== undefined
+        ? vStr((sheet as any)[XLSX.utils.encode_cell({ r, c: map.name })]?.v)
+        : ''
     const priceRaw =
       map.price !== undefined ? (sheet as any)[XLSX.utils.encode_cell({ r, c: map.price })]?.v : ''
     const unit =
-      map.unit !== undefined ? vStr((sheet as any)[XLSX.utils.encode_cell({ r, c: map.unit })]?.v) : ''
+      map.unit !== undefined
+        ? vStr((sheet as any)[XLSX.utils.encode_cell({ r, c: map.unit })]?.v)
+        : ''
     const category =
       map.category !== undefined
         ? vStr((sheet as any)[XLSX.utils.encode_cell({ r, c: map.category })]?.v)
@@ -327,15 +353,27 @@ export async function parseXLSXMaterials(input: File | ArrayBuffer): Promise<Par
 export function calculateTotalCost(
   materials: Array<Pick<TechCardMaterial, 'name' | 'quantity' | 'price'>>,
   priceMap: Record<string, number> = {},
-  laborCost = 0,
+  laborCost = 0
 ): number {
   let sum = 0
   for (const m of materials) {
     const qty = Number(m.quantity) || 0
     if (qty <= 0) continue
-    const unitPrice = Number.isFinite(Number(m.price)) && Number(m.price) > 0 ? Number(m.price) : (priceMap[m.name] || 0)
+    const unitPrice =
+      Number.isFinite(Number(m.price)) && Number(m.price) > 0
+        ? Number(m.price)
+        : priceMap[m.name] || 0
     sum += unitPrice * qty
   }
   const total = sum + Math.max(0, laborCost || 0)
   return Math.round(total)
+}
+
+// Интерфейс для импорта материалов из Excel
+export interface MaterialImport {
+  name: string
+  article: string
+  type: string
+  unit: string
+  price: number
 }

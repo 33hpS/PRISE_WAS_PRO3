@@ -36,9 +36,9 @@ export interface ProductSet {
 function parseItems(text: string): SetItem[] {
   return text
     .split('\n')
-    .map((l) => l.trim())
+    .map(l => l.trim())
     .filter(Boolean)
-    .map((l) => {
+    .map(l => {
       const m = l.match(/^(.+?)\s+x(\d+)$/i)
       if (m) return { name: m[1], qty: parseInt(m[2]) || 1 }
       return { name: l, qty: 1 }
@@ -49,7 +49,7 @@ function parseItems(text: string): SetItem[] {
  * stringifyItems — обратное преобразование массива в многострочный текст
  */
 function stringifyItems(list: SetItem[]): string {
-  return (list || []).map((it) => `${it.name} x${it.qty}`).join('\n')
+  return (list || []).map(it => `${it.name} x${it.qty}`).join('\n')
 }
 
 /**
@@ -145,9 +145,9 @@ export default function SetsManager(): JSX.Element {
       setDialogOpen(false)
     } catch {
       if (editing) {
-        setItems((prev) => prev.map((x) => (x.id === editing.id ? ({ ...x, ...payload } as any) : x)))
+        setItems(prev => prev.map(x => (x.id === editing.id ? ({ ...x, ...payload } as any) : x)))
       } else {
-        setItems((prev) => [{ ...payload, id: 'local-' + Date.now().toString(36) } as any, ...prev])
+        setItems(prev => [{ ...payload, id: 'local-' + Date.now().toString(36) } as any, ...prev])
       }
       setDialogOpen(false)
     }
@@ -160,7 +160,7 @@ export default function SetsManager(): JSX.Element {
       if (error) throw error
       await load()
     } catch {
-      setItems((prev) => prev.filter((x) => x.id !== id))
+      setItems(prev => prev.filter(x => x.id !== id))
     }
   }
 
@@ -168,126 +168,175 @@ export default function SetsManager(): JSX.Element {
     const q = search.toLowerCase().trim()
     if (!q) return items
     return items.filter(
-      (x) =>
+      x =>
         x.name.toLowerCase().includes(q) ||
         (x.notes || '').toLowerCase().includes(q) ||
-        (x.items || []).some((it) => it.name.toLowerCase().includes(q))
+        (x.items || []).some(it => it.name.toLowerCase().includes(q))
     )
   }, [items, search])
 
-  if (loading) return <div className="p-8 text-center text-gray-600">Загрузка комплектов...</div>
+  if (loading) return <div className='p-8 text-center text-gray-600'>Загрузка комплектов...</div>
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-        <h2 className="text-2xl font-bold flex items-center gap-2">
-          <Boxes className="w-5 h-5" />
+    <div className='space-y-6'>
+      <div className='flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between'>
+        <h2 className='text-2xl font-bold flex items-center gap-2'>
+          <Boxes className='w-5 h-5' />
           Комплекты
         </h2>
 
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
             <Button onClick={openCreate}>
-              <Plus className="w-4 h-4 mr-2" />
+              <Plus className='w-4 h-4 mr-2' />
               Создать комплект
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-[680px] bg-white dark:bg-slate-900 border border-gray-200 dark:border-gray-800 shadow-xl sm:rounded-lg">
-            <DialogHeader><DialogTitle>{editing ? 'Редактировать комплект' : 'Новый комплект'}</DialogTitle></DialogHeader>
-            <form onSubmit={handleSubmit} className="space-y-4">
+          <DialogContent className='sm:max-w-[680px] bg-white dark:bg-slate-900 border border-gray-200 dark:border-gray-800 shadow-xl sm:rounded-lg'>
+            <DialogHeader>
+              <DialogTitle>{editing ? 'Редактировать комплект' : 'Новый комплект'}</DialogTitle>
+            </DialogHeader>
+            <form onSubmit={handleSubmit} className='space-y-4'>
               <div>
-                <Label htmlFor="name">Название</Label>
-                <Input id="name" value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} required />
-              </div>
-
-              <div>
-                <Label htmlFor="items">Состав (по строке: "Название xКол-во")</Label>
-                <Textarea
-                  id="items"
-                  rows={5}
-                  placeholder={'Тумба 600 x1\nЗеркало 600 x1'}
-                  value={form.itemsText}
-                  onChange={(e) => setForm((f) => ({ ...f, itemsText: e.target.value }))}
+                <Label htmlFor='name'>Название</Label>
+                <Input
+                  id='name'
+                  value={form.name}
+                  onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+                  required
                 />
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <Label htmlFor='items'>Состав (по строке: "Название xКол-во")</Label>
+                <Textarea
+                  id='items'
+                  rows={5}
+                  placeholder={'Тумба 600 x1\nЗеркало 600 x1'}
+                  value={form.itemsText}
+                  onChange={e => setForm(f => ({ ...f, itemsText: e.target.value }))}
+                />
+              </div>
+
+              <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
                 <div>
-                  <Label htmlFor="discount">Скидка, %</Label>
+                  <Label htmlFor='discount'>Скидка, %</Label>
                   <Input
-                    id="discount"
-                    type="number"
-                    step="0.1"
+                    id='discount'
+                    type='number'
+                    step='0.1'
                     value={form.discount_percent}
-                    onChange={(e) => setForm((f) => ({ ...f, discount_percent: parseFloat(e.target.value) || 0 }))}
+                    onChange={e =>
+                      setForm(f => ({ ...f, discount_percent: parseFloat(e.target.value) || 0 }))
+                    }
                   />
                 </div>
                 <div>
-                  <Label htmlFor="price">Цена, сом</Label>
+                  <Label htmlFor='price'>Цена, сом</Label>
                   <Input
-                    id="price"
-                    type="number"
-                    step="0.01"
+                    id='price'
+                    type='number'
+                    step='0.01'
                     value={form.price}
-                    onChange={(e) => setForm((f) => ({ ...f, price: parseFloat(e.target.value) || 0 }))}
+                    onChange={e => setForm(f => ({ ...f, price: parseFloat(e.target.value) || 0 }))}
                   />
                 </div>
                 <div></div>
               </div>
 
               <div>
-                <Label htmlFor="notes">Заметки</Label>
-                <Textarea id="notes" rows={3} value={form.notes} onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))} />
+                <Label htmlFor='notes'>Заметки</Label>
+                <Textarea
+                  id='notes'
+                  rows={3}
+                  value={form.notes}
+                  onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
+                />
               </div>
 
-              <div className="flex gap-2 pt-2">
-                <Button type="submit" className="flex-1">{editing ? 'Сохранить' : 'Добавить'}</Button>
-                <Button type="button" variant="outline" onClick={() => setDialogOpen(false)} className="bg-transparent">Отмена</Button>
+              <div className='flex gap-2 pt-2'>
+                <Button type='submit' className='flex-1'>
+                  {editing ? 'Сохранить' : 'Добавить'}
+                </Button>
+                <Button
+                  type='button'
+                  variant='outline'
+                  onClick={() => setDialogOpen(false)}
+                  className='bg-transparent'
+                >
+                  Отмена
+                </Button>
               </div>
             </form>
           </DialogContent>
         </Dialog>
       </div>
 
-      <div className="flex gap-4">
-        <div className="flex-1 relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-          <Input placeholder="Поиск по названию, составу, заметкам..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
+      <div className='flex gap-4'>
+        <div className='flex-1 relative'>
+          <Search className='absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400' />
+          <Input
+            placeholder='Поиск по названию, составу, заметкам...'
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            className='pl-9'
+          />
         </div>
       </div>
 
-      <div className="grid gap-4">
+      <div className='grid gap-4'>
         {filtered.length === 0 ? (
-          <Card><CardContent className="p-8 text-center text-gray-500">Комплекты не найдены</CardContent></Card>
+          <Card>
+            <CardContent className='p-8 text-center text-gray-500'>
+              Комплекты не найдены
+            </CardContent>
+          </Card>
         ) : (
-          filtered.map((row) => (
+          filtered.map(row => (
             <Card key={row.id}>
-              <CardContent className="p-4">
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex-1">
-                    <h3 className="font-semibold text-lg">{row.name}</h3>
+              <CardContent className='p-4'>
+                <div className='flex items-start justify-between gap-4'>
+                  <div className='flex-1'>
+                    <h3 className='font-semibold text-lg'>{row.name}</h3>
                     {row.items && row.items.length > 0 && (
-                      <div className="text-sm text-gray-700 mt-1">
+                      <div className='text-sm text-gray-700 mt-1'>
                         Состав:&nbsp;
                         {row.items.map((it, idx) => (
-                          <span key={idx} className="inline-block bg-gray-50 border border-gray-200 rounded px-2 py-0.5 mr-1 mb-1">
+                          <span
+                            key={idx}
+                            className='inline-block bg-gray-50 border border-gray-200 rounded px-2 py-0.5 mr-1 mb-1'
+                          >
                             {it.name} × {it.qty}
                           </span>
                         ))}
                       </div>
                     )}
-                    <div className="text-sm text-gray-600 mt-1">
-                      {typeof row.discount_percent === 'number' && row.discount_percent > 0 && <>Скидка: {row.discount_percent}% • </>}
-                      {typeof row.price === 'number' && row.price > 0 && <>Цена: {row.price.toLocaleString('ru-RU')} сом</>}
+                    <div className='text-sm text-gray-600 mt-1'>
+                      {typeof row.discount_percent === 'number' && row.discount_percent > 0 && (
+                        <>Скидка: {row.discount_percent}% • </>
+                      )}
+                      {typeof row.price === 'number' && row.price > 0 && (
+                        <>Цена: {row.price.toLocaleString('ru-RU')} сом</>
+                      )}
                     </div>
-                    {row.notes && <div className="text-xs text-gray-500 mt-1">{row.notes}</div>}
+                    {row.notes && <div className='text-xs text-gray-500 mt-1'>{row.notes}</div>}
                   </div>
-                  <div className="flex gap-2">
-                    <Button variant="outline" size="sm" onClick={() => openEdit(row)} className="bg-transparent">
-                      <Edit2 className="w-4 h-4" />
+                  <div className='flex gap-2'>
+                    <Button
+                      variant='outline'
+                      size='sm'
+                      onClick={() => openEdit(row)}
+                      className='bg-transparent'
+                    >
+                      <Edit2 className='w-4 h-4' />
                     </Button>
-                    <Button variant="outline" size="sm" onClick={() => void remove(row.id)} className="bg-transparent">
-                      <Trash2 className="w-4 h-4" />
+                    <Button
+                      variant='outline'
+                      size='sm'
+                      onClick={() => void remove(row.id)}
+                      className='bg-transparent'
+                    >
+                      <Trash2 className='w-4 h-4' />
                     </Button>
                   </div>
                 </div>

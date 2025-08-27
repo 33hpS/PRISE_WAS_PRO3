@@ -1,0 +1,25 @@
+# Зависимости и сборка
+node_modules/
+dist/
+build/
+*.min.js
+*.min.css
+
+# Кеш и временные файлы
+.cache/
+.temp/
+*.tmp
+*.log
+coverage/
+
+# Конфигурации
+.env*
+package-lock.json
+yarn.lock
+
+# IDE файлы
+.vscode/
+.idea/
+
+# Метрики проекта
+wasser-metrics*.json

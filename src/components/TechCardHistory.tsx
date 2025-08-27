@@ -68,7 +68,7 @@ export default function TechCardHistory({ productId }: TechCardHistoryProps) {
             changes: { action: 'Создана тех карта' },
             previous_data: null,
             new_data: { materials_count: 15, total_cost: 2500 },
-            created_at: new Date().toISOString()
+            created_at: new Date().toISOString(),
           },
           {
             id: '2',
@@ -79,7 +79,7 @@ export default function TechCardHistory({ productId }: TechCardHistoryProps) {
             changes: { materials_updated: 2, cost_changed: true },
             previous_data: { total_cost: 2500 },
             new_data: { total_cost: 2650 },
-            created_at: new Date(Date.now() - 86400000).toISOString()
+            created_at: new Date(Date.now() - 86400000).toISOString(),
           },
           {
             id: '3',
@@ -90,8 +90,8 @@ export default function TechCardHistory({ productId }: TechCardHistoryProps) {
             changes: { action: 'Создан новый товар' },
             previous_data: null,
             new_data: { materials_count: 12, total_cost: 1800 },
-            created_at: new Date(Date.now() - 172800000).toISOString()
-          }
+            created_at: new Date(Date.now() - 172800000).toISOString(),
+          },
         ]
         setChanges(mockChanges)
         return
@@ -147,38 +147,39 @@ export default function TechCardHistory({ productId }: TechCardHistoryProps) {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center p-8">
-        <div className="text-lg">Загрузка истории...</div>
+      <div className='flex items-center justify-center p-8'>
+        <div className='text-lg'>Загрузка истории...</div>
       </div>
     )
   }
 
   return (
-    <div className="space-y-6">
+    <div className='space-y-6'>
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <History className="w-5 h-5" />
+          <CardTitle className='flex items-center gap-2'>
+            <History className='w-5 h-5' />
             История изменений тех карт
           </CardTitle>
         </CardHeader>
         <CardContent>
           {changes.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
-              <FileText className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+            <div className='text-center py-8 text-gray-500'>
+              <FileText className='w-12 h-12 mx-auto mb-4 text-gray-300' />
               <p>История изменений пуста</p>
             </div>
           ) : (
             <>
               {changes[0]?.id === '1' && (
-                <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                  <p className="text-sm text-yellow-800">
-                    📝 <strong>Демо-данные:</strong> Показаны примеры истории изменений. Создайте таблицу в базе данных для отслеживания реальных изменений.
+                <div className='mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg'>
+                  <p className='text-sm text-yellow-800'>
+                    📝 <strong>Демо-данные:</strong> Показаны примеры истории изменений. Создайте
+                    таблицу в базе данных для отслеживания реальных изменений.
                   </p>
                 </div>
               )}
-              
-              <div className="overflow-x-auto">
+
+              <div className='overflow-x-auto'>
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -190,19 +191,19 @@ export default function TechCardHistory({ productId }: TechCardHistoryProps) {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {changes.map((change) => (
+                    {changes.map(change => (
                       <TableRow key={change.id}>
                         <TableCell>
-                          <div className="flex items-center gap-2">
-                            <Calendar className="w-4 h-4 text-gray-400" />
-                            <span className="text-sm">
+                          <div className='flex items-center gap-2'>
+                            <Calendar className='w-4 h-4 text-gray-400' />
+                            <span className='text-sm'>
                               {new Date(change.created_at).toLocaleString('ru-RU')}
                             </span>
                           </div>
                         </TableCell>
                         <TableCell>
-                          <div className="font-medium">{change.product_name}</div>
-                          <div className="text-sm text-gray-500">ID: {change.product_id}</div>
+                          <div className='font-medium'>{change.product_name}</div>
+                          <div className='text-sm text-gray-500'>ID: {change.product_id}</div>
                         </TableCell>
                         <TableCell>
                           <Badge className={getChangeTypeColor(change.change_type)}>
@@ -210,18 +211,18 @@ export default function TechCardHistory({ productId }: TechCardHistoryProps) {
                           </Badge>
                         </TableCell>
                         <TableCell>
-                          <div className="flex items-center gap-2">
-                            <User className="w-4 h-4 text-gray-400" />
-                            <span className="text-sm">{change.changed_by}</span>
+                          <div className='flex items-center gap-2'>
+                            <User className='w-4 h-4 text-gray-400' />
+                            <span className='text-sm'>{change.changed_by}</span>
                           </div>
                         </TableCell>
                         <TableCell>
                           <Button
-                            variant="outline"
-                            size="sm"
+                            variant='outline'
+                            size='sm'
                             onClick={() => viewChangeDetails(change)}
                           >
-                            <Eye className="w-4 h-4 mr-2" />
+                            <Eye className='w-4 h-4 mr-2' />
                             Подробности
                           </Button>
                         </TableCell>
@@ -237,56 +238,56 @@ export default function TechCardHistory({ productId }: TechCardHistoryProps) {
 
       {/* Change details dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className='max-w-2xl'>
           <DialogHeader>
             <DialogTitle>Детали изменения</DialogTitle>
           </DialogHeader>
           {selectedChange && (
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+            <div className='space-y-4'>
+              <div className='grid grid-cols-2 gap-4'>
                 <div>
-                  <label className="text-sm font-medium text-gray-600">Продукт</label>
-                  <p className="font-medium">{selectedChange.product_name}</p>
+                  <label className='text-sm font-medium text-gray-600'>Продукт</label>
+                  <p className='font-medium'>{selectedChange.product_name}</p>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-gray-600">Тип изменения</label>
+                  <label className='text-sm font-medium text-gray-600'>Тип изменения</label>
                   <Badge className={getChangeTypeColor(selectedChange.change_type)}>
                     {getChangeTypeText(selectedChange.change_type)}
                   </Badge>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-gray-600">Дата</label>
+                  <label className='text-sm font-medium text-gray-600'>Дата</label>
                   <p>{new Date(selectedChange.created_at).toLocaleString('ru-RU')}</p>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-gray-600">Пользователь</label>
+                  <label className='text-sm font-medium text-gray-600'>Пользователь</label>
                   <p>{selectedChange.changed_by}</p>
                 </div>
               </div>
 
               <div>
-                <label className="text-sm font-medium text-gray-600">Описание изменений</label>
-                <div className="mt-2 p-3 bg-gray-50 rounded-lg">
-                  <pre className="text-sm text-gray-700 whitespace-pre-wrap">
+                <label className='text-sm font-medium text-gray-600'>Описание изменений</label>
+                <div className='mt-2 p-3 bg-gray-50 rounded-lg'>
+                  <pre className='text-sm text-gray-700 whitespace-pre-wrap'>
                     {JSON.stringify(selectedChange.changes, null, 2)}
                   </pre>
                 </div>
               </div>
 
               {selectedChange.change_type === 'updated' && (
-                <div className="grid grid-cols-2 gap-4">
+                <div className='grid grid-cols-2 gap-4'>
                   <div>
-                    <label className="text-sm font-medium text-gray-600">Предыдущие данные</label>
-                    <div className="mt-2 p-3 bg-red-50 rounded-lg">
-                      <pre className="text-sm text-red-700 whitespace-pre-wrap">
+                    <label className='text-sm font-medium text-gray-600'>Предыдущие данные</label>
+                    <div className='mt-2 p-3 bg-red-50 rounded-lg'>
+                      <pre className='text-sm text-red-700 whitespace-pre-wrap'>
                         {JSON.stringify(selectedChange.previous_data, null, 2)}
                       </pre>
                     </div>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-gray-600">Новые данные</label>
-                    <div className="mt-2 p-3 bg-green-50 rounded-lg">
-                      <pre className="text-sm text-green-700 whitespace-pre-wrap">
+                    <label className='text-sm font-medium text-gray-600'>Новые данные</label>
+                    <div className='mt-2 p-3 bg-green-50 rounded-lg'>
+                      <pre className='text-sm text-green-700 whitespace-pre-wrap'>
                         {JSON.stringify(selectedChange.new_data, null, 2)}
                       </pre>
                     </div>

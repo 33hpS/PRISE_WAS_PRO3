@@ -8,7 +8,10 @@ import { Card as UICard } from '../ui/card'
 /**
  * Card — универсальная карточка-обертка
  */
-export default function Card(props: { className?: string; children?: React.ReactNode }): JSX.Element {
+export default function Card(props: {
+  className?: string
+  children?: React.ReactNode
+}): JSX.Element {
   const { className, children } = props
   return <UICard className={className}>{children}</UICard>
 }

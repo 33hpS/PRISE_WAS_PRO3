@@ -57,14 +57,13 @@ export const CURRENCIES: Record<CurrencyCode, { name: string; flag: string }> = 
   EUR: { name: 'Евро', flag: '🇪🇺' },
   RUB: { name: 'Рубль (Россия)', flag: '🇷🇺' },
   KZT: { name: 'Теңге (Казахстан)', flag: '🇰🇿' },
-  CNY: { name: 'Юань (Китай)', flag: '🇨🇳' }
+  CNY: { name: 'Юань (Китай)', flag: '🇨🇳' },
 }
 
 /**
  * Cache base key (per base currency)
  */
-const FOREX_CACHE_KEY = (base: BaseCurrency): CacheKey =>
-  (`forex-cache::${base}` as CacheKey)
+const FOREX_CACHE_KEY = (base: BaseCurrency): CacheKey => `forex-cache::${base}` as CacheKey
 
 /**
  * Cache time-to-live in milliseconds (10 minutes)
@@ -128,12 +127,9 @@ export async function fetchRates(base: BaseCurrency): Promise<NormalizedRate[]> 
  * For API map: 1 BASE = R[C] C
  * Then 1 C = 1 / R[C] BASE
  */
-function normalizeRates(
-  base: BaseCurrency,
-  apiRates: Record<string, number>
-): NormalizedRate[] {
+function normalizeRates(base: BaseCurrency, apiRates: Record<string, number>): NormalizedRate[] {
   const desired: CurrencyCode[] = ['USD', 'EUR', 'RUB', 'KZT', 'CNY']
-  const list: NormalizedRate[] = desired.map((code) => {
+  const list: NormalizedRate[] = desired.map(code => {
     const r = apiRates[code]
     const perUnit = r ? 1 / r : 0
     const meta = CURRENCIES[code]
@@ -141,7 +137,7 @@ function normalizeRates(
       code,
       name: meta.name,
       flag: meta.flag,
-      perUnit: Number.isFinite(perUnit) ? perUnit : 0
+      perUnit: Number.isFinite(perUnit) ? perUnit : 0,
     }
   })
 

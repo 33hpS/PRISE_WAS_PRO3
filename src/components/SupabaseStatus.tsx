@@ -12,13 +12,9 @@ interface SupabaseStatusProps {
 /**
  * Supabase logo component
  */
-const SupabaseLogo = ({ className = "w-4 h-4" }: { className?: string }) => (
-  <svg 
-    viewBox="0 0 109 113" 
-    className={className}
-    fill="currentColor"
-  >
-    <path d="M63.7076 110.284c-1.1534 1.4118-3.5541.4147-3.5541-1.4754V51.6804H20.8192c-2.0618 0-3.1963-2.3758-1.9193-4.0164L58.3899 2.28088c1.3-1.73333 3.826-.91333 3.826 1.24422v55.73398h39.239c2.062 0 3.196 2.376 1.919 4.016L63.7076 110.284Z"/>
+const SupabaseLogo = ({ className = 'w-4 h-4' }: { className?: string }) => (
+  <svg viewBox='0 0 109 113' className={className} fill='currentColor'>
+    <path d='M63.7076 110.284c-1.1534 1.4118-3.5541.4147-3.5541-1.4754V51.6804H20.8192c-2.0618 0-3.1963-2.3758-1.9193-4.0164L58.3899 2.28088c1.3-1.73333 3.826-.91333 3.826 1.24422v55.73398h39.239c2.062 0 3.196 2.376 1.919 4.016L63.7076 110.284Z' />
   </svg>
 )
 
@@ -42,10 +38,10 @@ export default function SupabaseStatus({ onStatusChange, compact = false }: Supa
     try {
       setIsChecking(true)
       const { data, error } = await supabase.from('products').select('count').limit(1)
-      
+
       const connected = !error
       setIsConnected(connected)
-      
+
       if (error) {
         console.error('Supabase connection error:', error)
         setRetryCount(prev => prev + 1)
@@ -53,7 +49,7 @@ export default function SupabaseStatus({ onStatusChange, compact = false }: Supa
         setRetryCount(0)
       }
       setLastCheck(new Date())
-      
+
       // Передаем состояние подключения
       if (onStatusChange) {
         onStatusChange(connected)
@@ -78,9 +74,9 @@ export default function SupabaseStatus({ onStatusChange, compact = false }: Supa
   }
 
   const getStatusIcon = () => {
-    if (isChecking) return <SupabaseLogo className="w-4 h-4 animate-pulse" />
-    if (isConnected) return <SupabaseLogo className="w-4 h-4" />
-    return <SupabaseLogo className="w-4 h-4 opacity-50" />
+    if (isChecking) return <SupabaseLogo className='w-4 h-4 animate-pulse' />
+    if (isConnected) return <SupabaseLogo className='w-4 h-4' />
+    return <SupabaseLogo className='w-4 h-4 opacity-50' />
   }
 
   const getStatusText = () => {
@@ -97,57 +93,71 @@ export default function SupabaseStatus({ onStatusChange, compact = false }: Supa
 
   if (compact) {
     return (
-      <div className={`inline-flex items-center gap-2 px-3 py-2 rounded-xl border-2 text-sm font-medium transition-all duration-300 shadow-lg backdrop-blur-sm ${getStatusColor()}`}>
-        <div className={`flex items-center justify-center p-1 rounded-lg bg-white/20 ${getLogoColor()}`}>
+      <div
+        className={`inline-flex items-center gap-2 px-3 py-2 rounded-xl border-2 text-sm font-medium transition-all duration-300 shadow-lg backdrop-blur-sm ${getStatusColor()}`}
+      >
+        <div
+          className={`flex items-center justify-center p-1 rounded-lg bg-white/20 ${getLogoColor()}`}
+        >
           {getStatusIcon()}
         </div>
-        <div className="flex flex-col items-start">
-          <span className="text-xs font-bold">SUPABASE</span>
-          <span className="text-xs opacity-80">{isConnected ? 'Активен' : isChecking ? 'Проверка' : 'Ошибка'}</span>
+        <div className='flex flex-col items-start'>
+          <span className='text-xs font-bold'>SUPABASE</span>
+          <span className='text-xs opacity-80'>
+            {isConnected ? 'Активен' : isChecking ? 'Проверка' : 'Ошибка'}
+          </span>
         </div>
         {/* Connection indicator dot */}
-        <div className={`w-2 h-2 rounded-full transition-all duration-300 ${
-          isChecking 
-            ? 'bg-amber-400 animate-pulse' 
-            : isConnected 
-              ? 'bg-emerald-400 shadow-emerald-400/50 shadow-lg animate-pulse' 
-              : 'bg-red-400'
-        }`}></div>
+        <div
+          className={`w-2 h-2 rounded-full transition-all duration-300 ${
+            isChecking
+              ? 'bg-amber-400 animate-pulse'
+              : isConnected
+                ? 'bg-emerald-400 shadow-emerald-400/50 shadow-lg animate-pulse'
+                : 'bg-red-400'
+          }`}
+        ></div>
       </div>
     )
   }
 
   return (
-    <div className={`flex items-center gap-4 p-4 rounded-xl border-2 transition-all duration-300 shadow-lg backdrop-blur-sm ${getStatusColor()}`}>
-      <div className={`flex items-center justify-center p-3 rounded-xl bg-white/30 ${getLogoColor()}`}>
+    <div
+      className={`flex items-center gap-4 p-4 rounded-xl border-2 transition-all duration-300 shadow-lg backdrop-blur-sm ${getStatusColor()}`}
+    >
+      <div
+        className={`flex items-center justify-center p-3 rounded-xl bg-white/30 ${getLogoColor()}`}
+      >
         {getStatusIcon()}
       </div>
-      
-      <div className="flex flex-col flex-1">
-        <div className="flex items-center gap-2 mb-1">
-          <span className="text-sm font-bold tracking-wide">SUPABASE</span>
-          <div className={`w-2 h-2 rounded-full transition-all duration-300 ${
-            isChecking 
-              ? 'bg-amber-400 animate-pulse' 
-              : isConnected 
-                ? 'bg-emerald-400 shadow-emerald-400/50 shadow-lg animate-pulse' 
-                : 'bg-red-400'
-          }`}></div>
+
+      <div className='flex flex-col flex-1'>
+        <div className='flex items-center gap-2 mb-1'>
+          <span className='text-sm font-bold tracking-wide'>SUPABASE</span>
+          <div
+            className={`w-2 h-2 rounded-full transition-all duration-300 ${
+              isChecking
+                ? 'bg-amber-400 animate-pulse'
+                : isConnected
+                  ? 'bg-emerald-400 shadow-emerald-400/50 shadow-lg animate-pulse'
+                  : 'bg-red-400'
+            }`}
+          ></div>
         </div>
-        
-        <span className="text-sm font-medium mb-1">{getStatusText()}</span>
-        
+
+        <span className='text-sm font-medium mb-1'>{getStatusText()}</span>
+
         {lastCheck && (
-          <span className="text-xs opacity-75">
+          <span className='text-xs opacity-75'>
             Последняя проверка: {lastCheck.toLocaleTimeString()}
           </span>
         )}
       </div>
-      
+
       {!isConnected && !isChecking && (
         <button
           onClick={checkConnection}
-          className="px-3 py-1.5 text-xs font-medium rounded-lg hover:bg-white/20 transition-colors border border-current/20"
+          className='px-3 py-1.5 text-xs font-medium rounded-lg hover:bg-white/20 transition-colors border border-current/20'
         >
           Повторить
         </button>

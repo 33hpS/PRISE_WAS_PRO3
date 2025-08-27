@@ -11,9 +11,11 @@ import App from './App'
  */
 function initializeApp() {
   const rootElement = document.getElementById('root')
-  
+
   if (!rootElement) {
-    console.error('Root element not found! Make sure there is an element with id="root" in your HTML.')
+    console.error(
+      'Root element not found! Make sure there is an element with id="root" in your HTML.'
+    )
     return
   }
 
@@ -23,18 +25,18 @@ function initializeApp() {
   try {
     // Create React root
     const root = createRoot(rootElement)
-    
+
     // Render application
     root.render(
       <StrictMode>
         <App />
       </StrictMode>
     )
-    
+
     console.log('✅ React application initialized successfully')
   } catch (error) {
     console.error('❌ Failed to initialize React application:', error)
-    
+
     // Show error message to user
     rootElement.innerHTML = `
       <div style="

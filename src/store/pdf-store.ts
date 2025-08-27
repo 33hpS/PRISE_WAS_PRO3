@@ -132,9 +132,9 @@ interface PdfStoreState {
  */
 export const usePdfStore = create<PdfStoreState>((set, get) => ({
   data: null,
-  setData: (data) => set({ data }),
-  mergeConfig: (partial) =>
-    set((state) => {
+  setData: data => set({ data }),
+  mergeConfig: partial =>
+    set(state => {
       if (!state.data) return state
       return {
         data: {
@@ -146,8 +146,8 @@ export const usePdfStore = create<PdfStoreState>((set, get) => ({
         },
       }
     }),
-  updateLogo: (logo) =>
-    set((state) => {
+  updateLogo: logo =>
+    set(state => {
       if (!state.data) return state
       return {
         data: {

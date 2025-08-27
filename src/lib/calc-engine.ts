@@ -95,11 +95,15 @@ function findMaterial(ref: TechCardItemRef, list: MaterialRecord[]): MaterialRec
     if (byId) return byId
   }
   if (ref.article) {
-    const byArticle = list.find(m => (m.article || '').trim().toLowerCase() === (ref.article || '').trim().toLowerCase())
+    const byArticle = list.find(
+      m => (m.article || '').trim().toLowerCase() === (ref.article || '').trim().toLowerCase()
+    )
     if (byArticle) return byArticle
   }
   if (ref.name) {
-    const byName = list.find(m => m.name.trim().toLowerCase() === (ref.name || '').trim().toLowerCase())
+    const byName = list.find(
+      m => m.name.trim().toLowerCase() === (ref.name || '').trim().toLowerCase()
+    )
     if (byName) return byName
   }
   return null
@@ -115,7 +119,9 @@ function parseSize(size?: string): [number, number, number] {
 /** Площадь поверхности параллелепипеда в м² (как в документе): 2*(W*H + W*D + H*D), мм -> м */
 export function surfaceAreaM2FromSize(size?: string): number {
   const [w, h, d] = parseSize(size)
-  const W = w / 1000, H = h / 1000, D = d / 1000
+  const W = w / 1000,
+    H = h / 1000,
+    D = d / 1000
   if (W <= 0 || H <= 0 || D <= 0) return 0
   return 2 * (W * H + W * D + H * D)
 }
@@ -137,7 +143,10 @@ export interface MaterialCostRow {
  * calculateMaterialCost — цена по позиции BOM.
  * Формула: Price × Quantity × ConsumptionCoeff.
  */
-export function calculateMaterialCost(item: TechCardItemRef, materials: MaterialRecord[]): MaterialCostRow {
+export function calculateMaterialCost(
+  item: TechCardItemRef,
+  materials: MaterialRecord[]
+): MaterialCostRow {
   const m = findMaterial(item, materials)
   const qty = Math.max(0, num(item.quantity, 0))
   const unitPrice = Math.max(0, num(m?.price, 0))
@@ -235,7 +244,9 @@ export function calculatePaintCost(product: ProductLike, datasets: CostDatasets)
       continue
     }
 
-    const cmx = complexities.find(c => c.id === (job.complexityId || recipe.complexityId || '')) || {
+    const cmx = complexities.find(
+      c => c.id === (job.complexityId || recipe.complexityId || '')
+    ) || {
       name: 'Standard',
       coeff: 1.0,
       id: 'std',
@@ -364,14 +375,23 @@ export function calculateProductCost(params: {
  * validateCostCalculation — простая подпись расчёта и запись в localStorage.
  * Важно: это клиентская целостность, не защита от атак. Для продакшена — серверные проверки.
  */
-export function validateCostCalculation(product: ProductLike, result: MasterCostResult): MasterCostResult {
+export function validateCostCalculation(
+  product: ProductLike,
+  result: MasterCostResult
+): MasterCostResult {
   try {
     const payload = {
       materials: result.breakdown.materials.map(i => ({
-        id: i.id, name: i.name, qty: i.quantity, price: i.unitPrice, coeff: i.consumptionCoeff,
+        id: i.id,
+        name: i.name,
+        qty: i.quantity,
+        price: i.unitPrice,
+        coeff: i.consumptionCoeff,
       })),
       paint: result.breakdown.paint.map(j => ({
-        recipe: j.recipeName, layers: j.layers, costPerM2: j.costPerM2,
+        recipe: j.recipeName,
+        layers: j.layers,
+        costPerM2: j.costPerM2,
       })),
       total: result.totalCost,
       final: result.finalPrice,

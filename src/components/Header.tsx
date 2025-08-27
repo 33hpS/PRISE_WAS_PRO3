@@ -33,7 +33,9 @@ interface HeaderProps {
 function generateNavClass(active: boolean): string {
   return [
     'inline-flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-md border transition-colors',
-    active ? 'bg-blue-50 text-blue-700 border-blue-200' : 'text-gray-700 hover:bg-gray-50 border-gray-200',
+    active
+      ? 'bg-blue-50 text-blue-700 border-blue-200'
+      : 'text-gray-700 hover:bg-gray-50 border-gray-200',
     'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2',
   ].join(' ')
 }
@@ -56,97 +58,104 @@ export default function Header({ user, onLogout }: HeaderProps): JSX.Element {
   const pathname = location?.pathname || '/'
 
   return (
-    <header className="bg-white border-b border-gray-200 sticky top-0 z-40">
-      <div className="container mx-auto px-4">
-        <div className="h-14 flex items-center justify-between gap-4">
+    <header className='bg-white border-b border-gray-200 sticky top-0 z-40'>
+      <div className='container mx-auto px-4'>
+        <div className='h-14 flex items-center justify-between gap-4'>
           {/* Бренд */}
           <a
-            href="#/"
+            href='#/'
             onClick={go('/')}
-            className="flex items-center gap-2 group"
-            aria-label="На главную"
-            title="Главная"
+            className='flex items-center gap-2 group'
+            aria-label='На главную'
+            title='Главная'
           >
             <img
               src={LOGO_URL}
               alt={`${BRAND.name} logo`}
-              className="w-8 h-8 rounded-md object-contain bg-white border"
+              className='w-8 h-8 rounded-md object-contain bg-white border'
             />
-            <div className="leading-tight">
-              <div className="font-bold text-gray-900 group-hover:text-blue-700 transition-colors">{BRAND.name}</div>
-              <div className="text-xs text-gray-500">Furniture Factory</div>
+            <div className='leading-tight'>
+              <div className='font-bold text-gray-900 group-hover:text-blue-700 transition-colors'>
+                {BRAND.name}
+              </div>
+              <div className='text-xs text-gray-500'>Furniture Factory</div>
             </div>
           </a>
 
           {/* Навигация (основные разделы) */}
-          <nav className="hidden md:flex items-center gap-2">
-            <a href="#/" onClick={go('/')} className={generateNavClass(pathname === '/')} title="Главная">
-              <HomeIcon className="w-4 h-4" />
+          <nav className='hidden md:flex items-center gap-2'>
+            <a
+              href='#/'
+              onClick={go('/')}
+              className={generateNavClass(pathname === '/')}
+              title='Главная'
+            >
+              <HomeIcon className='w-4 h-4' />
               <span>Главная</span>
             </a>
 
             <a
-              href="#/products"
+              href='#/products'
               onClick={go('/products')}
               className={generateNavClass(pathname === '/products')}
-              title="Продукция"
+              title='Продукция'
             >
-              <Package className="w-4 h-4" />
+              <Package className='w-4 h-4' />
               <span>Продукция</span>
             </a>
 
             <a
-              href="#/materials"
+              href='#/materials'
               onClick={go('/materials')}
               className={generateNavClass(pathname === '/materials')}
-              title="Материалы"
+              title='Материалы'
             >
-              <Database className="w-4 h-4" />
+              <Database className='w-4 h-4' />
               <span>Материалы</span>
             </a>
 
             <a
-              href="#/collections"
+              href='#/collections'
               onClick={go('/collections')}
               className={generateNavClass(pathname === '/collections')}
-              title="Коллекции"
+              title='Коллекции'
             >
-              <Settings className="w-4 h-4" />
+              <Settings className='w-4 h-4' />
               <span>Коллекции</span>
             </a>
 
             <a
-              href="#/dashboard"
+              href='#/dashboard'
               onClick={go('/dashboard')}
               className={generateNavClass(pathname === '/dashboard')}
-              title="Панель"
+              title='Панель'
             >
-              <FileText className="w-4 h-4" />
+              <FileText className='w-4 h-4' />
               <span>Панель</span>
             </a>
           </nav>
 
           {/* Пользователь и выход */}
-          <div className="flex items-center gap-2">
-            <Card className="px-2 py-1 hidden sm:flex items-center gap-2 border-gray-200">
-              <User className="w-4 h-4 text-gray-600" />
-              <div className="text-xs text-gray-700">
-                <div className="font-medium truncate max-w-[160px]" title={user?.email || 'Гость'}>
+          <div className='flex items-center gap-2'>
+            <Card className='px-2 py-1 hidden sm:flex items-center gap-2 border-gray-200'>
+              <User className='w-4 h-4 text-gray-600' />
+              <div className='text-xs text-gray-700'>
+                <div className='font-medium truncate max-w-[160px]' title={user?.email || 'Гость'}>
                   {user?.email || 'Гость'}
                 </div>
-                <div className="text-gray-500">{user?.role ? String(user.role) : 'no-role'}</div>
+                <div className='text-gray-500'>{user?.role ? String(user.role) : 'no-role'}</div>
               </div>
             </Card>
 
             <Button
-              variant="outline"
+              variant='outline'
               onClick={() => void onLogout?.()}
-              className="bg-transparent flex items-center gap-1.5 hover:bg-red-50 hover:border-red-200 hover:text-red-700"
-              aria-label="Выйти"
-              title="Выйти"
+              className='bg-transparent flex items-center gap-1.5 hover:bg-red-50 hover:border-red-200 hover:text-red-700'
+              aria-label='Выйти'
+              title='Выйти'
             >
-              <LogOut className="w-4 h-4" />
-              <span className="hidden md:inline">Выйти</span>
+              <LogOut className='w-4 h-4' />
+              <span className='hidden md:inline'>Выйти</span>
             </Button>
           </div>
         </div>

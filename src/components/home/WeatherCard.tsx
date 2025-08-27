@@ -87,7 +87,9 @@ export default function WeatherCard(): JSX.Element {
   /** Значения по умолчанию: Бишкек */
   const [lat, setLat] = useState<number>(() => readLS('weather:lat', 42.87))
   const [lon, setLon] = useState<number>(() => readLS('weather:lon', 74.59))
-  const [provider, setProvider] = useState<WeatherProvider>(() => readLS<WeatherProvider>('weather:provider', 'openmeteo'))
+  const [provider, setProvider] = useState<WeatherProvider>(() =>
+    readLS<WeatherProvider>('weather:provider', 'openmeteo')
+  )
 
   /** Ключ для OpenWeatherMap */
   const [owmKey, setOwmKey] = useState<string>(() => readLS('weather:owmKey', ''))
@@ -130,7 +132,7 @@ export default function WeatherCard(): JSX.Element {
           throw new Error('Не задан API ключ OpenWeatherMap')
         }
         const url = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${encodeURIComponent(
-          owmKey,
+          owmKey
         )}&units=metric&lang=ru`
         const resp = await fetch(url)
         if (!resp.ok) throw new Error('HTTP ' + resp.status)
@@ -166,7 +168,9 @@ export default function WeatherCard(): JSX.Element {
       setTemp(t)
       setDesc(d.label)
       setEmoji(d.emoji)
-      setWind(typeof data.current?.wind_speed_10m === 'number' ? data.current!.wind_speed_10m! : null)
+      setWind(
+        typeof data.current?.wind_speed_10m === 'number' ? data.current!.wind_speed_10m! : null
+      )
       setUpdatedAt(Date.now())
     } catch (e: any) {
       setError(e?.message || 'Не удалось загрузить погоду')
@@ -189,14 +193,20 @@ export default function WeatherCard(): JSX.Element {
   const providerLabel = provider === 'owm' ? 'OpenWeatherMap' : 'Open‑Meteo'
 
   return (
-    <Card className="bg-white border border-gray-200 overflow-hidden">
-      <CardHeader className="flex items-center justify-between space-y-0">
-        <CardTitle className="text-base font-semibold">{title} ({providerLabel})</CardTitle>
+    <Card className='bg-white border border-gray-200 overflow-hidden'>
+      <CardHeader className='flex items-center justify-between space-y-0'>
+        <CardTitle className='text-base font-semibold'>
+          {title} ({providerLabel})
+        </CardTitle>
 
-        <div className="flex items-center gap-2">
+        <div className='flex items-center gap-2'>
           {/* Переключатель провайдера */}
-          <div className="inline-flex rounded-lg border border-gray-200 overflow-hidden" role="tablist" aria-label="Провайдер погоды">
-            {(['owm', 'openmeteo'] as WeatherProvider[]).map((p) => {
+          <div
+            className='inline-flex rounded-lg border border-gray-200 overflow-hidden'
+            role='tablist'
+            aria-label='Провайдер погоды'
+          >
+            {(['owm', 'openmeteo'] as WeatherProvider[]).map(p => {
               const active = provider === p
               const label = p === 'owm' ? 'OWM' : 'Open‑Meteo'
               const disabled = p === 'owm' && !owmKey
@@ -210,9 +220,13 @@ export default function WeatherCard(): JSX.Element {
                     void load()
                   }}
                   className={`px-2.5 py-1.5 text-xs transition ${active ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-50'} ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
-                  role="tab"
+                  role='tab'
                   aria-selected={active}
-                  title={p === 'owm' && !owmKey ? 'Укажите API ключ для OpenWeatherMap в Настройках' : label}
+                  title={
+                    p === 'owm' && !owmKey
+                      ? 'Укажите API ключ для OpenWeatherMap в Настройках'
+                      : label
+                  }
                 >
                   {label}
                 </button>
@@ -220,10 +234,19 @@ export default function WeatherCard(): JSX.Element {
             })}
           </div>
 
-          <Button variant="outline" className="bg-transparent h-8 px-3" onClick={() => void load()} disabled={loading}>
+          <Button
+            variant='outline'
+            className='bg-transparent h-8 px-3'
+            onClick={() => void load()}
+            disabled={loading}
+          >
             {loading ? 'Обновление…' : 'Обновить'}
           </Button>
-          <Button variant="outline" className="bg-transparent h-8 px-3" onClick={() => setShowSettings((s) => !s)}>
+          <Button
+            variant='outline'
+            className='bg-transparent h-8 px-3'
+            onClick={() => setShowSettings(s => !s)}
+          >
             {showSettings ? 'Скрыть' : 'Настройки'}
           </Button>
         </div>
@@ -231,62 +254,83 @@ export default function WeatherCard(): JSX.Element {
 
       <CardContent>
         {/* Основной блок */}
-        <div className="flex items-center gap-4">
-          <div className="w-20 h-20 rounded-lg border bg-gradient-to-br from-blue-50 to-indigo-50 flex items-center justify-center text-3xl">
+        <div className='flex items-center gap-4'>
+          <div className='w-20 h-20 rounded-lg border bg-gradient-to-br from-blue-50 to-indigo-50 flex items-center justify-center text-3xl'>
             {emoji}
           </div>
           <div>
-            <div className="text-2xl font-bold text-gray-900">{temp !== null ? `${Math.round(temp)}°` : '—'}</div>
-            <div className="text-sm text-gray-600 capitalize">{desc}</div>
-            {typeof wind === 'number' && <div className="text-xs text-gray-500 mt-0.5">Ветер: {wind} м/с</div>}
-            {updatedAt && <div className="text-xs text-gray-400 mt-1">Обновлено: {new Date(updatedAt).toLocaleTimeString('ru-RU')}</div>}
-            {error && <div className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-1 mt-2 inline-block">{error}</div>}
+            <div className='text-2xl font-bold text-gray-900'>
+              {temp !== null ? `${Math.round(temp)}°` : '—'}
+            </div>
+            <div className='text-sm text-gray-600 capitalize'>{desc}</div>
+            {typeof wind === 'number' && (
+              <div className='text-xs text-gray-500 mt-0.5'>Ветер: {wind} м/с</div>
+            )}
+            {updatedAt && (
+              <div className='text-xs text-gray-400 mt-1'>
+                Обновлено: {new Date(updatedAt).toLocaleTimeString('ru-RU')}
+              </div>
+            )}
+            {error && (
+              <div className='text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-1 mt-2 inline-block'>
+                {error}
+              </div>
+            )}
           </div>
         </div>
 
         {/* Настройки */}
         {showSettings && (
-          <div className="mt-4 p-3 rounded-lg border border-gray-200 bg-gray-50">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+          <div className='mt-4 p-3 rounded-lg border border-gray-200 bg-gray-50'>
+            <div className='grid grid-cols-1 md:grid-cols-4 gap-3'>
               <div>
-                <label className="block text-xs text-gray-600 mb-1">Широта (lat)</label>
+                <label className='block text-xs text-gray-600 mb-1'>Широта (lat)</label>
                 <input
-                  type="number"
-                  step="0.0001"
+                  type='number'
+                  step='0.0001'
                   value={lat}
-                  onChange={(e) => setLat(parseFloat(e.target.value || '0'))}
-                  className="w-full px-2.5 py-2 rounded-md border border-gray-300 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  onChange={e => setLat(parseFloat(e.target.value || '0'))}
+                  className='w-full px-2.5 py-2 rounded-md border border-gray-300 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500'
                 />
               </div>
               <div>
-                <label className="block text-xs text-gray-600 mb-1">Долгота (lon)</label>
+                <label className='block text-xs text-gray-600 mb-1'>Долгота (lon)</label>
                 <input
-                  type="number"
-                  step="0.0001"
+                  type='number'
+                  step='0.0001'
                   value={lon}
-                  onChange={(e) => setLon(parseFloat(e.target.value || '0'))}
-                  className="w-full px-2.5 py-2 rounded-md border border-gray-300 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  onChange={e => setLon(parseFloat(e.target.value || '0'))}
+                  className='w-full px-2.5 py-2 rounded-md border border-gray-300 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500'
                 />
               </div>
-              <div className="md:col-span-2">
-                <label className="block text-xs text-gray-600 mb-1">API Key (OpenWeatherMap)</label>
+              <div className='md:col-span-2'>
+                <label className='block text-xs text-gray-600 mb-1'>API Key (OpenWeatherMap)</label>
                 <input
-                  type="text"
-                  placeholder="Вставьте ключ OWM"
+                  type='text'
+                  placeholder='Вставьте ключ OWM'
                   value={owmKey}
-                  onChange={(e) => setOwmKey(e.target.value.trim())}
-                  className="w-full px-2.5 py-2 rounded-md border border-gray-300 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  onChange={e => setOwmKey(e.target.value.trim())}
+                  className='w-full px-2.5 py-2 rounded-md border border-gray-300 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500'
                 />
                 {!owmKey && (
-                  <div className="mt-1 text-[11px] text-gray-500">
-                    Без ключа используется Open‑Meteo (без авторизации). Вставьте ключ OWM чтобы видеть точные данные.
+                  <div className='mt-1 text-[11px] text-gray-500'>
+                    Без ключа используется Open‑Meteo (без авторизации). Вставьте ключ OWM чтобы
+                    видеть точные данные.
                   </div>
                 )}
               </div>
             </div>
-            <div className="mt-3 flex items-center justify-end gap-2">
-              <Button variant="outline" className="bg-transparent h-8 px-3" onClick={() => setShowSettings(false)}>Отмена</Button>
-              <Button className="h-8 px-3" onClick={saveSettings}>Сохранить</Button>
+            <div className='mt-3 flex items-center justify-end gap-2'>
+              <Button
+                variant='outline'
+                className='bg-transparent h-8 px-3'
+                onClick={() => setShowSettings(false)}
+              >
+                Отмена
+              </Button>
+              <Button className='h-8 px-3' onClick={saveSettings}>
+                Сохранить
+              </Button>
             </div>
           </div>
         )}

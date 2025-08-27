@@ -53,7 +53,12 @@ export default function MarkupRulesManager(): JSX.Element {
   const [open, setOpen] = useState<boolean>(false)
   const [editing, setEditing] = useState<MarkupRule | null>(null)
 
-  const [form, setForm] = useState<{ name: string; percent: number; conditionText: string; active: boolean }>({
+  const [form, setForm] = useState<{
+    name: string
+    percent: number
+    conditionText: string
+    active: boolean
+  }>({
     name: '',
     percent: 0,
     conditionText: '',
@@ -125,9 +130,9 @@ export default function MarkupRulesManager(): JSX.Element {
       setOpen(false)
     } catch {
       if (editing) {
-        setItems((prev) => prev.map((x) => (x.id === editing.id ? ({ ...x, ...payload } as any) : x)))
+        setItems(prev => prev.map(x => (x.id === editing.id ? ({ ...x, ...payload } as any) : x)))
       } else {
-        setItems((prev) => [{ ...payload, id: 'local-' + Date.now().toString(36) } as any, ...prev])
+        setItems(prev => [{ ...payload, id: 'local-' + Date.now().toString(36) } as any, ...prev])
       }
       setOpen(false)
     }
@@ -140,7 +145,7 @@ export default function MarkupRulesManager(): JSX.Element {
       if (error) throw error
       await load()
     } catch {
-      setItems((prev) => prev.filter((x) => x.id !== id))
+      setItems(prev => prev.filter(x => x.id !== id))
     }
   }
 
@@ -148,80 +153,96 @@ export default function MarkupRulesManager(): JSX.Element {
     const q = search.toLowerCase().trim()
     if (!q) return items
     return items.filter(
-      (x) =>
+      x =>
         x.name.toLowerCase().includes(q) ||
         String(x.percent).includes(q) ||
-        JSON.stringify(x.condition || {}).toLowerCase().includes(q)
+        JSON.stringify(x.condition || {})
+          .toLowerCase()
+          .includes(q)
     )
   }, [items, search])
 
-  if (loading) return <div className="p-8 text-center text-gray-600">Загрузка правил...</div>
+  if (loading) return <div className='p-8 text-center text-gray-600'>Загрузка правил...</div>
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-        <h2 className="text-2xl font-bold flex items-center gap-2">
-          <Percent className="w-5 h-5" />
+    <div className='space-y-6'>
+      <div className='flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between'>
+        <h2 className='text-2xl font-bold flex items-center gap-2'>
+          <Percent className='w-5 h-5' />
           Правила наценки
         </h2>
 
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
             <Button onClick={openCreate}>
-              <Plus className="w-4 h-4 mr-2" />
+              <Plus className='w-4 h-4 mr-2' />
               Добавить правило
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-[720px] bg-white dark:bg-slate-900 border border-gray-200 dark:border-gray-800 shadow-xl sm:rounded-lg">
+          <DialogContent className='sm:max-w-[720px] bg-white dark:bg-slate-900 border border-gray-200 dark:border-gray-800 shadow-xl sm:rounded-lg'>
             <DialogHeader>
               <DialogTitle>{editing ? 'Редактировать правило' : 'Новое правило'}</DialogTitle>
             </DialogHeader>
 
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="md:col-span-2">
-                  <Label htmlFor="name">Название</Label>
-                  <Input id="name" value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} required />
+            <form onSubmit={handleSubmit} className='space-y-4'>
+              <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
+                <div className='md:col-span-2'>
+                  <Label htmlFor='name'>Название</Label>
+                  <Input
+                    id='name'
+                    value={form.name}
+                    onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+                    required
+                  />
                 </div>
                 <div>
-                  <Label htmlFor="percent">Наценка, %</Label>
+                  <Label htmlFor='percent'>Наценка, %</Label>
                   <Input
-                    id="percent"
-                    type="number"
-                    step="0.1"
+                    id='percent'
+                    type='number'
+                    step='0.1'
                     value={form.percent}
-                    onChange={(e) => setForm((f) => ({ ...f, percent: parseFloat(e.target.value) || 0 }))}
+                    onChange={e =>
+                      setForm(f => ({ ...f, percent: parseFloat(e.target.value) || 0 }))
+                    }
                   />
                 </div>
               </div>
 
               <div>
-                <Label htmlFor="cond">Условие (JSON)</Label>
+                <Label htmlFor='cond'>Условие (JSON)</Label>
                 <Textarea
-                  id="cond"
+                  id='cond'
                   rows={6}
                   placeholder='Например: { "category": "sinks", "brand": "Aqua" }'
                   value={form.conditionText}
-                  onChange={(e) => setForm((f) => ({ ...f, conditionText: e.target.value }))}
+                  onChange={e => setForm(f => ({ ...f, conditionText: e.target.value }))}
                 />
-                <div className="text-xs text-gray-500 mt-1">Если оставить пустым — правило применяется ко всем позициям.</div>
+                <div className='text-xs text-gray-500 mt-1'>
+                  Если оставить пустым — правило применяется ко всем позициям.
+                </div>
               </div>
 
-              <label className="inline-flex items-center gap-2 text-sm">
+              <label className='inline-flex items-center gap-2 text-sm'>
                 <input
-                  type="checkbox"
+                  type='checkbox'
                   checked={form.active}
-                  onChange={(e) => setForm((f) => ({ ...f, active: e.target.checked }))}
-                  className="rounded border-gray-300"
+                  onChange={e => setForm(f => ({ ...f, active: e.target.checked }))}
+                  className='rounded border-gray-300'
                 />
                 Активно
               </label>
 
-              <div className="flex gap-2 pt-2">
-                <Button type="submit" className="flex-1">
+              <div className='flex gap-2 pt-2'>
+                <Button type='submit' className='flex-1'>
                   {editing ? 'Сохранить' : 'Добавить'}
                 </Button>
-                <Button type="button" variant="outline" className="bg-transparent" onClick={() => setOpen(false)}>
+                <Button
+                  type='button'
+                  variant='outline'
+                  className='bg-transparent'
+                  onClick={() => setOpen(false)}
+                >
                   Отмена
                 </Button>
               </div>
@@ -230,38 +251,54 @@ export default function MarkupRulesManager(): JSX.Element {
         </Dialog>
       </div>
 
-      <div className="flex gap-4">
-        <div className="flex-1 relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-          <Input placeholder="Поиск по названию, проценту, условию..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
+      <div className='flex gap-4'>
+        <div className='flex-1 relative'>
+          <Search className='absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400' />
+          <Input
+            placeholder='Поиск по названию, проценту, условию...'
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            className='pl-9'
+          />
         </div>
       </div>
 
-      <div className="grid gap-4">
+      <div className='grid gap-4'>
         {filtered.length === 0 ? (
           <Card>
-            <CardContent className="p-8 text-center text-gray-500">Правила не найдены</CardContent>
+            <CardContent className='p-8 text-center text-gray-500'>Правила не найдены</CardContent>
           </Card>
         ) : (
-          filtered.map((row) => (
+          filtered.map(row => (
             <Card key={row.id}>
-              <CardContent className="p-4">
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex-1">
-                    <div className="font-semibold text-lg">
-                      {row.name} · <span className="text-gray-600">{row.percent}%</span> {row.active ? '' : <span className="text-red-600">· не активно</span>}
+              <CardContent className='p-4'>
+                <div className='flex items-start justify-between gap-4'>
+                  <div className='flex-1'>
+                    <div className='font-semibold text-lg'>
+                      {row.name} · <span className='text-gray-600'>{row.percent}%</span>{' '}
+                      {row.active ? '' : <span className='text-red-600'>· не активно</span>}
                     </div>
-                    <div className="text-xs text-gray-600 mt-1">
-                      Условие: <span className="font-mono">{pretty(row.condition) || '—'}</span>
+                    <div className='text-xs text-gray-600 mt-1'>
+                      Условие: <span className='font-mono'>{pretty(row.condition) || '—'}</span>
                     </div>
                   </div>
 
-                  <div className="flex gap-2">
-                    <Button variant="outline" size="sm" className="bg-transparent" onClick={() => openEdit(row)}>
-                      <Edit2 className="w-4 h-4" />
+                  <div className='flex gap-2'>
+                    <Button
+                      variant='outline'
+                      size='sm'
+                      className='bg-transparent'
+                      onClick={() => openEdit(row)}
+                    >
+                      <Edit2 className='w-4 h-4' />
                     </Button>
-                    <Button variant="outline" size="sm" className="bg-transparent" onClick={() => void remove(row.id)}>
-                      <Trash2 className="w-4 h-4" />
+                    <Button
+                      variant='outline'
+                      size='sm'
+                      className='bg-transparent'
+                      onClick={() => void remove(row.id)}
+                    >
+                      <Trash2 className='w-4 h-4' />
                     </Button>
                   </div>
                 </div>

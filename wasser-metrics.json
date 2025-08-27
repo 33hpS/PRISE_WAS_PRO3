@@ -1,0 +1,24 @@
+{
+  "meta": {
+    "version": "1.0.0",
+    "timestamp": "2025-08-27T07:52:14.089Z",
+    "projectName": "WASSER Мебельная фабрика"
+  },
+  "furniture": {
+    "components": 0,
+    "materials": 0,
+    "collections": 0,
+    "pdfGenerators": 0
+  },
+  "quality": {
+    "totalLines": 0,
+    "reactComponents": 0,
+    "memoizedComponents": 0,
+    "typesCoverage": 95,
+    "functionalRatio": 0
+  },
+  "performance": {
+    "bundleSize": "0",
+    "efficiency": 0
+  }
+}

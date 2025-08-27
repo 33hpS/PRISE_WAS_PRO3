@@ -101,7 +101,9 @@ export const getCurrentUserWithRole = async (): Promise<UserWithRole | null> => 
     }
 
     // 3) Fallback: ask Supabase directly
-    const { data: { user } } = await supabase.auth.getUser()
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
     if (!user) {
       return null
     }
@@ -143,7 +145,9 @@ export const isAdmin = async (): Promise<boolean> => {
     }
 
     // 3) Fallback to Supabase user email
-    const { data: { user } } = await supabase.auth.getUser()
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
     if (!user) return false
 
     return user.email === 'sherhan1988hp@gmail.com' || user.email === 'admin@wasser.com'
@@ -186,13 +190,11 @@ export const updateUserRole = async (userId: string, role: UserRole): Promise<vo
       throw new Error('Недостаточно прав для изменения ролей')
     }
 
-    const { error } = await supabase
-      .from('user_roles')
-      .upsert({
-        user_id: userId,
-        role: role,
-        updated_at: new Date().toISOString(),
-      })
+    const { error } = await supabase.from('user_roles').upsert({
+      user_id: userId,
+      role: role,
+      updated_at: new Date().toISOString(),
+    })
 
     if (error) {
       // If table missing, log and soft-fail
@@ -217,9 +219,7 @@ export const getAllUsersWithRoles = async (): Promise<UserWithRole[]> => {
     throw new Error('Недостаточно прав для просмотра пользователей')
   }
 
-  const { data, error } = await supabase
-    .from('user_roles')
-    .select(`
+  const { data, error } = await supabase.from('user_roles').select(`
       user_id,
       role,
       created_at,
@@ -230,10 +230,12 @@ export const getAllUsersWithRoles = async (): Promise<UserWithRole[]> => {
     throw new Error(`Ошибка загрузки пользователей: ${error.message}`)
   }
 
-  return data?.map((item: any) => ({
-    id: item.user_id,
-    email: item.users?.email || '',
-    role: item.role,
-    created_at: item.created_at,
-  })) || []
+  return (
+    data?.map((item: any) => ({
+      id: item.user_id,
+      email: item.users?.email || '',
+      role: item.role,
+      created_at: item.created_at,
+    })) || []
+  )
 }

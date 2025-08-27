@@ -44,7 +44,8 @@ export default function PdfGeneratorClient(): JSX.Element {
         ...storeData,
         companyData: {
           ...storeData.companyData,
-          logo: (storeData.config.showLogo ?? true) ? (logo || storeData.companyData.logo) : undefined,
+          logo:
+            (storeData.config.showLogo ?? true) ? logo || storeData.companyData.logo : undefined,
         },
         config: { ...storeData.config, selectedStyle: template },
       }
@@ -120,7 +121,11 @@ export default function PdfGeneratorClient(): JSX.Element {
     try {
       const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
       for (let i = 0; i < pageNodes.length; i++) {
-        const canvas = await html2canvas(pageNodes[i], { scale: 2, backgroundColor: '#ffffff', useCORS: true })
+        const canvas = await html2canvas(pageNodes[i], {
+          scale: 2,
+          backgroundColor: '#ffffff',
+          useCORS: true,
+        })
         const imgData = canvas.toDataURL('image/png')
         if (i > 0) doc.addPage()
         doc.addImage(imgData, 'PNG', 0, 0, 210, 297)
@@ -172,7 +177,11 @@ export default function PdfGeneratorClient(): JSX.Element {
     try {
       const imgs: string[] = []
       for (const node of pageNodes) {
-        const canvas = await html2canvas(node, { scale: 2, backgroundColor: '#ffffff', useCORS: true })
+        const canvas = await html2canvas(node, {
+          scale: 2,
+          backgroundColor: '#ffffff',
+          useCORS: true,
+        })
         imgs.push(canvas.toDataURL('image/png'))
       }
       const w = window.open('', '_blank')
@@ -193,7 +202,7 @@ export default function PdfGeneratorClient(): JSX.Element {
             </style>
           </head>
           <body>
-            ${imgs.map((src) => `<img class="page" src="${src}" alt="page" />`).join('')}
+            ${imgs.map(src => `<img class="page" src="${src}" alt="page" />`).join('')}
           </body>
         </html>
       `)
@@ -234,8 +243,8 @@ export default function PdfGeneratorClient(): JSX.Element {
     const results: Array<{ index: number; dataUrl: string }> = []
     await Promise.all(
       toRead.map(
-        (file) =>
-          new Promise<void>((resolve) => {
+        file =>
+          new Promise<void>(resolve => {
             const reader = new FileReader()
             reader.onload = () => {
               const index = findTargetIndex(file.name)
@@ -250,7 +259,9 @@ export default function PdfGeneratorClient(): JSX.Element {
     )
 
     if (results.length === 0) {
-      alert('Не удалось сопоставить изображения с товарами. Переименуйте файлы: начните с артикула или части названия товара.')
+      alert(
+        'Не удалось сопоставить изображения с товарами. Переименуйте файлы: начните с артикула или части названия товара.'
+      )
       return
     }
 
@@ -275,37 +286,37 @@ export default function PdfGeneratorClient(): JSX.Element {
   }, [storeData, logo])
 
   return (
-    <div className="space-y-6">
-      <Card className="bg-white border border-gray-200">
+    <div className='space-y-6'>
+      <Card className='bg-white border border-gray-200'>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Eye className="w-5 h-5" />
+          <CardTitle className='flex items-center gap-2'>
+            <Eye className='w-5 h-5' />
             Генератор PDF
           </CardTitle>
         </CardHeader>
-        <CardContent className="flex flex-col md:flex-row md:items-center gap-4">
+        <CardContent className='flex flex-col md:flex-row md:items-center gap-4'>
           {/* Шаблон */}
-          <div className="w-full md:w-64">
-            <Select value={template} onValueChange={(v) => setTemplate(v as TemplateType)}>
+          <div className='w-full md:w-64'>
+            <Select value={template} onValueChange={v => setTemplate(v as TemplateType)}>
               <SelectTrigger>
-                <SelectValue placeholder="Шаблон PDF" />
+                <SelectValue placeholder='Шаблон PDF' />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="modern">Modern — Градиентный</SelectItem>
-                <SelectItem value="nordic">Nordic — Минимализм</SelectItem>
-                <SelectItem value="executive">Executive — Корпоративный</SelectItem>
+                <SelectItem value='modern'>Modern — Градиентный</SelectItem>
+                <SelectItem value='nordic'>Nordic — Минимализм</SelectItem>
+                <SelectItem value='executive'>Executive — Корпоративный</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
           {/* Режим */}
-          <div className="flex items-center gap-2">
+          <div className='flex items-center gap-2'>
             <Button
               variant={mode === 'client' ? 'default' : 'outline'}
               className={mode === 'client' ? '' : 'bg-transparent'}
               onClick={() => setMode('client')}
             >
-              <Monitor className="w-4 h-4 mr-2" />
+              <Monitor className='w-4 h-4 mr-2' />
               Client
             </Button>
             <Button
@@ -313,28 +324,28 @@ export default function PdfGeneratorClient(): JSX.Element {
               className={mode === 'server' ? '' : 'bg-transparent'}
               onClick={() => setMode('server')}
             >
-              <Server className="w-4 h-4 mr-2" />
+              <Server className='w-4 h-4 mr-2' />
               Server
             </Button>
           </div>
 
           {/* Логотип */}
-          <div className="flex items-center gap-3 md:ml-auto">
+          <div className='flex items-center gap-3 md:ml-auto'>
             {logo ? (
-              <img src={logo} alt="logo" className="w-10 h-10 rounded border object-cover" />
+              <img src={logo} alt='logo' className='w-10 h-10 rounded border object-cover' />
             ) : (
-              <div className="w-10 h-10 rounded border bg-gray-50" />
+              <div className='w-10 h-10 rounded border bg-gray-50' />
             )}
-            <label className="cursor-pointer">
+            <label className='cursor-pointer'>
               <input
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={(e) => e.target.files?.[0] && onLogoUpload(e.target.files[0])}
+                type='file'
+                accept='image/*'
+                className='hidden'
+                onChange={e => e.target.files?.[0] && onLogoUpload(e.target.files[0])}
               />
-              <span className="inline-flex">
-                <Button variant="outline" className="bg-transparent">
-                  <Upload className="w-4 h-4 mr-2" />
+              <span className='inline-flex'>
+                <Button variant='outline' className='bg-transparent'>
+                  <Upload className='w-4 h-4 mr-2' />
                   Логотип
                 </Button>
               </span>
@@ -343,17 +354,17 @@ export default function PdfGeneratorClient(): JSX.Element {
 
           {/* Фото товаров */}
           {storeData && (
-            <label className="cursor-pointer">
+            <label className='cursor-pointer'>
               <input
-                type="file"
-                accept="image/*"
+                type='file'
+                accept='image/*'
                 multiple
-                className="hidden"
-                onChange={(e) => e.target.files && onProductsImagesUpload(e.target.files)}
+                className='hidden'
+                onChange={e => e.target.files && onProductsImagesUpload(e.target.files)}
               />
-              <span className="inline-flex">
-                <Button variant="outline" className="bg-transparent">
-                  <Images className="w-4 h-4 mr-2" />
+              <span className='inline-flex'>
+                <Button variant='outline' className='bg-transparent'>
+                  <Images className='w-4 h-4 mr-2' />
                   Фото товаров
                 </Button>
               </span>
@@ -361,31 +372,39 @@ export default function PdfGeneratorClient(): JSX.Element {
           )}
 
           {/* Действия */}
-          <div className="flex items-center gap-2">
-            <Button onClick={handlePrint} variant="outline" className="bg-transparent" disabled={loading}>
-              <Printer className="w-4 h-4 mr-2" />
+          <div className='flex items-center gap-2'>
+            <Button
+              onClick={handlePrint}
+              variant='outline'
+              className='bg-transparent'
+              disabled={loading}
+            >
+              <Printer className='w-4 h-4 mr-2' />
               Печать
             </Button>
-            <Button onClick={mode === 'server' ? handleDownloadServer : handleDownloadClient} disabled={loading}>
-              <Download className="w-4 h-4 mr-2" />
+            <Button
+              onClick={mode === 'server' ? handleDownloadServer : handleDownloadClient}
+              disabled={loading}
+            >
+              <Download className='w-4 h-4 mr-2' />
               {loading ? 'Подготовка...' : 'Скачать PDF'}
             </Button>
           </div>
         </CardContent>
       </Card>
 
-      <Card className="bg-white border border-gray-200">
+      <Card className='bg-white border border-gray-200'>
         <CardHeader>
           <CardTitle>Предпросмотр (A4)</CardTitle>
         </CardHeader>
         <CardContent>
-          <div ref={previewRef} className="flex flex-col items-center gap-6">
+          <div ref={previewRef} className='flex flex-col items-center gap-6'>
             {pages}
           </div>
-          <Separator className="my-4" />
-          <div className="text-xs text-gray-500">
-            Примечание: В режиме Client используются системные шрифты (html2canvas + jsPDF).
-            Режим Server (Puppeteer) обеспечивает пиксель‑перфект рендер Google Fonts.
+          <Separator className='my-4' />
+          <div className='text-xs text-gray-500'>
+            Примечание: В режиме Client используются системные шрифты (html2canvas + jsPDF). Режим
+            Server (Puppeteer) обеспечивает пиксель‑перфект рендер Google Fonts.
           </div>
         </CardContent>
       </Card>
@@ -405,7 +424,10 @@ function pageStyle(fontFamily?: string, bg?: string): React.CSSProperties {
     background: bg || '#ffffff',
     position: 'relative',
     boxShadow: '0 2mm 8mm rgba(0,0,0,0.05)',
-    fontFamily: fontFamily && fontFamily !== 'System' ? fontFamily : 'Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial',
+    fontFamily:
+      fontFamily && fontFamily !== 'System'
+        ? fontFamily
+        : 'Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial',
   }
 }
 
@@ -443,7 +465,7 @@ function visibleColumns(config: PdfData['config']) {
     'price',
     'image',
   ]
-  return order.filter((k) => (cols as any)[k])
+  return order.filter(k => (cols as any)[k])
 }
 
 /**
@@ -459,11 +481,14 @@ function renderModernPages(pdf: PdfData): JSX.Element[] {
   const bg = config.bgColor
 
   // Группировка товаров
-  products.forEach((p) => {
+  products.forEach(p => {
     const key =
-      by === 'collection' ? (p.collection || 'Без коллекции')
-        : by === 'type' ? (p.type || 'Без типа')
-          : by === 'category' ? (p.category || 'Без категории')
+      by === 'collection'
+        ? p.collection || 'Без коллекции'
+        : by === 'type'
+          ? p.type || 'Без типа'
+          : by === 'category'
+            ? p.category || 'Без категории'
             : 'Все товары'
     if (!groups[key]) groups[key] = []
     groups[key].push(p)
@@ -472,100 +497,158 @@ function renderModernPages(pdf: PdfData): JSX.Element[] {
   const cols = visibleColumns(config)
 
   return [
-    <div key="modern-1" className="pdf-page" style={pageStyle(font, bg)}>
+    <div key='modern-1' className='pdf-page' style={pageStyle(font, bg)}>
       <style>{modernCss(pColor, aColor, !!config.striped, config.density || 'regular')}</style>
-      <div className="header-container">
-        <div className="brand-identity">
+      <div className='header-container'>
+        <div className='brand-identity'>
           {companyData.logo ? (
-            <img src={companyData.logo} alt="logo" style={{ width: 54, height: 54, borderRadius: 16, objectFit: 'cover', transform: 'rotate(-4deg)' }} />
+            <img
+              src={companyData.logo}
+              alt='logo'
+              style={{
+                width: 54,
+                height: 54,
+                borderRadius: 16,
+                objectFit: 'cover',
+                transform: 'rotate(-4deg)',
+              }}
+            />
           ) : (
-            <div className="brand-mark">W</div>
+            <div className='brand-mark'>W</div>
           )}
-          <div className="brand-text">
-            <div className="brand-name">{companyData.name}</div>
-            <div className="brand-descriptor">{companyData.tagline}</div>
+          <div className='brand-text'>
+            <div className='brand-name'>{companyData.name}</div>
+            <div className='brand-descriptor'>{companyData.tagline}</div>
           </div>
         </div>
-        <div className="contact-matrix">
-          <div className="contact-cell"><div className="contact-icon">А</div><div className="contact-text">{companyData.address}</div></div>
-          <div className="contact-cell"><div className="contact-icon">Т</div><div className="contact-text">{companyData.phone}</div></div>
-          <div className="contact-cell"><div className="contact-icon">@</div><div className="contact-text">{companyData.email}</div></div>
-          <div className="contact-cell"><div className="contact-icon">W</div><div className="contact-text">{companyData.website}</div></div>
+        <div className='contact-matrix'>
+          <div className='contact-cell'>
+            <div className='contact-icon'>А</div>
+            <div className='contact-text'>{companyData.address}</div>
+          </div>
+          <div className='contact-cell'>
+            <div className='contact-icon'>Т</div>
+            <div className='contact-text'>{companyData.phone}</div>
+          </div>
+          <div className='contact-cell'>
+            <div className='contact-icon'>@</div>
+            <div className='contact-text'>{companyData.email}</div>
+          </div>
+          <div className='contact-cell'>
+            <div className='contact-icon'>W</div>
+            <div className='contact-text'>{companyData.website}</div>
+          </div>
         </div>
       </div>
 
-      <div className="doc-header" style={{ background: `linear-gradient(135deg, ${pColor}, ${aColor})` }}>
-        <div className="doc-title">{documentData.title}</div>
-        <div className="doc-meta">
-          <div className="meta-item"><span>Версия:</span><span className="meta-badge">{documentData.version}</span></div>
-          <div className="meta-item"><span>Дата:</span><span className="meta-badge">{documentData.date}</span></div>
-          <div className="meta-item"><span>Статус:</span><span className="meta-badge">АКТУАЛЬНЫЙ</span></div>
+      <div
+        className='doc-header'
+        style={{ background: `linear-gradient(135deg, ${pColor}, ${aColor})` }}
+      >
+        <div className='doc-title'>{documentData.title}</div>
+        <div className='doc-meta'>
+          <div className='meta-item'>
+            <span>Версия:</span>
+            <span className='meta-badge'>{documentData.version}</span>
+          </div>
+          <div className='meta-item'>
+            <span>Дата:</span>
+            <span className='meta-badge'>{documentData.date}</span>
+          </div>
+          <div className='meta-item'>
+            <span>Статус:</span>
+            <span className='meta-badge'>АКТУАЛЬНЫЙ</span>
+          </div>
         </div>
       </div>
 
       {documentData.specialOffer && (
-        <div className="notification-bar">
-          <div className="notification-icon">🎯</div>
-          <div className="notification-text">{documentData.specialOffer}</div>
+        <div className='notification-bar'>
+          <div className='notification-icon'>🎯</div>
+          <div className='notification-text'>{documentData.specialOffer}</div>
         </div>
       )}
 
       {Object.entries(groups).map(([groupName, list], idx) => (
-        <div className="catalog-section" key={groupName}>
+        <div className='catalog-section' key={groupName}>
           {by !== 'none' && (
-            <div className="catalog-header">
-              <div className="catalog-index" style={{ background: `linear-gradient(135deg, ${pColor}, ${aColor})` }}>{String(idx + 1).padStart(2, '0')}</div>
-              <div className="catalog-info">
-                <div className="catalog-title">{groupName}</div>
-                <div className="catalog-subtitle">Сгруппировано по "{by}"</div>
+            <div className='catalog-header'>
+              <div
+                className='catalog-index'
+                style={{ background: `linear-gradient(135deg, ${pColor}, ${aColor})` }}
+              >
+                {String(idx + 1).padStart(2, '0')}
+              </div>
+              <div className='catalog-info'>
+                <div className='catalog-title'>{groupName}</div>
+                <div className='catalog-subtitle'>Сгруппировано по "{by}"</div>
               </div>
             </div>
           )}
-          <table className="data-table">
+          <table className='data-table'>
             <thead>
               <tr>
-                {cols.includes('index') && <th width="6%">№</th>}
-                {cols.includes('article') && <th width="10%">Артикул</th>}
-                {cols.includes('name') && <th width="22%">Наименование</th>}
-                {cols.includes('collection') && <th width="12%">Коллекция</th>}
-                {cols.includes('type') && <th width="8%">Вид</th>}
-                {cols.includes('dimensions') && <th width="12%">Габариты</th>}
-                {cols.includes('material') && <th width="12%">Материал</th>}
-                {cols.includes('color') && <th width="10%">Цвет</th>}
-                {cols.includes('description') && <th width="16%">Описание</th>}
-                {cols.includes('cost') && <th width="10%">Себестоимость</th>}
-                {cols.includes('markup') && <th width="10%">Наценка</th>}
-                {cols.includes('price') && <th width="10%">Цена (KGS)</th>}
+                {cols.includes('index') && <th width='6%'>№</th>}
+                {cols.includes('article') && <th width='10%'>Артикул</th>}
+                {cols.includes('name') && <th width='22%'>Наименование</th>}
+                {cols.includes('collection') && <th width='12%'>Коллекция</th>}
+                {cols.includes('type') && <th width='8%'>Вид</th>}
+                {cols.includes('dimensions') && <th width='12%'>Габариты</th>}
+                {cols.includes('material') && <th width='12%'>Материал</th>}
+                {cols.includes('color') && <th width='10%'>Цвет</th>}
+                {cols.includes('description') && <th width='16%'>Описание</th>}
+                {cols.includes('cost') && <th width='10%'>Себестоимость</th>}
+                {cols.includes('markup') && <th width='10%'>Наценка</th>}
+                {cols.includes('price') && <th width='10%'>Цена (KGS)</th>}
               </tr>
             </thead>
             <tbody>
               {list.map((item, i) => (
                 <tr key={`${item.id}-${i}`}>
-                  {cols.includes('index') && <td className="cell-index">{i + 1}</td>}
-                  {cols.includes('article') && <td className="cell-article">{item.article || '-'}</td>}
+                  {cols.includes('index') && <td className='cell-index'>{i + 1}</td>}
+                  {cols.includes('article') && (
+                    <td className='cell-article'>{item.article || '-'}</td>
+                  )}
                   {cols.includes('name') && <td>{item.name}</td>}
                   {cols.includes('collection') && <td>{item.collection || '-'}</td>}
-                  {cols.includes('type') && <td><div className="cell-visual">{item.type || '-'}</div></td>}
-                  {cols.includes('dimensions') && <td className="cell-dimensions">{item.dimensions || '-'}</td>}
+                  {cols.includes('type') && (
+                    <td>
+                      <div className='cell-visual'>{item.type || '-'}</div>
+                    </td>
+                  )}
+                  {cols.includes('dimensions') && (
+                    <td className='cell-dimensions'>{item.dimensions || '-'}</td>
+                  )}
                   {cols.includes('material') && (
-                    <td className="cell-material">
-                      {(item.material || '').split('/').filter(Boolean).map((m, j) => (
-                        <span className="material-badge" key={j}>{m.trim()}</span>
-                      ))}
+                    <td className='cell-material'>
+                      {(item.material || '')
+                        .split('/')
+                        .filter(Boolean)
+                        .map((m, j) => (
+                          <span className='material-badge' key={j}>
+                            {m.trim()}
+                          </span>
+                        ))}
                     </td>
                   )}
                   {cols.includes('color') && (
-                    <td className="cell-color">
-                      <span className="color-sample" />
+                    <td className='cell-color'>
+                      <span className='color-sample' />
                       <span>{item.color || '-'}</span>
                     </td>
                   )}
-                  {cols.includes('description') && <td className="cell-desc">{item.description || '-'}</td>}
-                  {cols.includes('cost') && <td className="cell-num">{(item.total_cost || 0).toLocaleString('ru-RU')}</td>}
-                  {cols.includes('markup') && <td className="cell-num">{(item.markup || 0).toLocaleString('ru-RU')}</td>}
+                  {cols.includes('description') && (
+                    <td className='cell-desc'>{item.description || '-'}</td>
+                  )}
+                  {cols.includes('cost') && (
+                    <td className='cell-num'>{(item.total_cost || 0).toLocaleString('ru-RU')}</td>
+                  )}
+                  {cols.includes('markup') && (
+                    <td className='cell-num'>{(item.markup || 0).toLocaleString('ru-RU')}</td>
+                  )}
                   {cols.includes('price') && (
                     <td
-                      className="cell-price"
+                      className='cell-price'
                       style={{
                         background: `linear-gradient(135deg, ${pColor}, ${aColor})`,
                         WebkitBackgroundClip: 'text',
@@ -584,49 +667,56 @@ function renderModernPages(pdf: PdfData): JSX.Element[] {
       ))}
     </div>,
 
-    <div key="modern-2" className="pdf-page" style={pageStyle(font, bg)}>
+    <div key='modern-2' className='pdf-page' style={pageStyle(font, bg)}>
       <style>{modernCss(pColor, aColor, !!config.striped, config.density || 'regular')}</style>
-      <div className="terms-container">
-        <div className="terms-header">
-          <div className="terms-title">УСЛОВИЯ СОТРУДНИЧЕСТВА</div>
-          <div className="terms-subtitle">Актуальные параметры коммерческого взаимодействия</div>
+      <div className='terms-container'>
+        <div className='terms-header'>
+          <div className='terms-title'>УСЛОВИЯ СОТРУДНИЧЕСТВА</div>
+          <div className='terms-subtitle'>Актуальные параметры коммерческого взаимодействия</div>
         </div>
-        <div className="terms-grid">
+        <div className='terms-grid'>
           {[
-            ['Ценообразование', 'Цены указаны в KGS с учетом НДС. Корректировка тарифов — с уведомлением за 14 дней.'],
+            [
+              'Ценообразование',
+              'Цены указаны в KGS с учетом НДС. Корректировка тарифов — с уведомлением за 14 дней.',
+            ],
             ['Схема оплаты', 'Дилеры: согласно договору. Розница: 100% предоплата.'],
             ['Сроки', 'Склад: 3 рабочих дня. Под заказ: 14–21 день.'],
             ['Логистика', 'Бишкек: бесплатно от 30 000 сом. Регионы КР: по тарифам ТК.'],
             ['Гарантия', '24 месяца на весь ассортимент. Постгарантийное обслуживание.'],
             ['Партнерство', 'Индивидуальные условия и маркетинговая поддержка.'],
           ].map(([title, desc], i) => (
-            <div className="term-card" key={i}>
-              <div className="term-number">{i + 1}</div>
-              <div className="term-icon">★</div>
-              <div className="term-title">{title}</div>
-              <div className="term-description">{desc}</div>
+            <div className='term-card' key={i}>
+              <div className='term-number'>{i + 1}</div>
+              <div className='term-icon'>★</div>
+              <div className='term-title'>{title}</div>
+              <div className='term-description'>{desc}</div>
             </div>
           ))}
         </div>
       </div>
 
-      <div className="contact-section">
-        <div className="contact-avatar">👤</div>
-        <div className="contact-info">
-          <div className="contact-role">Менеджер по работе с клиентами</div>
-          <div className="contact-name">{companyData.manager.name}</div>
-          <div className="contact-details">
+      <div className='contact-section'>
+        <div className='contact-avatar'>👤</div>
+        <div className='contact-info'>
+          <div className='contact-role'>Менеджер по работе с клиентами</div>
+          <div className='contact-name'>{companyData.manager.name}</div>
+          <div className='contact-details'>
             <span>📱 {companyData.manager.phone}</span>
             <span>✉️ {companyData.manager.email}</span>
           </div>
         </div>
-        <div className="contact-qr"><div className="qr-placeholder" /></div>
+        <div className='contact-qr'>
+          <div className='qr-placeholder' />
+        </div>
       </div>
 
-      <div className="footer">
-        <div className="footer-left">© {new Date().getFullYear()} {companyData.name}</div>
-        <div className="footer-center">{companyData.tagline}</div>
-        <div className="footer-right">Все права защищены</div>
+      <div className='footer'>
+        <div className='footer-left'>
+          © {new Date().getFullYear()} {companyData.name}
+        </div>
+        <div className='footer-center'>{companyData.tagline}</div>
+        <div className='footer-right'>Все права защищены</div>
       </div>
     </div>,
   ]
@@ -643,71 +733,91 @@ function renderNordicPages(data: PdfData): JSX.Element[] {
   const cols = visibleColumns(config)
 
   return [
-    <div key="nordic-1" className="pdf-page" style={pageStyle(font, bg)}>
+    <div key='nordic-1' className='pdf-page' style={pageStyle(font, bg)}>
       <style>{nordicCss(pColor, !!config.striped, config.density || 'regular')}</style>
-      <div className="header">
+      <div className='header'>
         {companyData.logo ? (
-          <img src={companyData.logo} alt="logo" style={{ height: 48, objectFit: 'contain', margin: '0 auto 8px', display: 'block' }} />
+          <img
+            src={companyData.logo}
+            alt='logo'
+            style={{ height: 48, objectFit: 'contain', margin: '0 auto 8px', display: 'block' }}
+          />
         ) : null}
-        <div className="logo">{companyData.name}</div>
-        <div className="tagline">{companyData.tagline}</div>
-        <div className="contacts-strip">
+        <div className='logo'>{companyData.name}</div>
+        <div className='tagline'>{companyData.tagline}</div>
+        <div className='contacts-strip'>
           <span>{companyData.address}</span>
           <span>{companyData.phone}</span>
           <span>{companyData.email}</span>
         </div>
       </div>
 
-      <div className="doc-title">
+      <div className='doc-title'>
         <h1>Прайс-лист</h1>
-        <div className="doc-date">Действителен с {documentData.date}</div>
+        <div className='doc-date'>Действителен с {documentData.date}</div>
       </div>
 
-      <div className="product-section">
-        <table className="product-table">
+      <div className='product-section'>
+        <table className='product-table'>
           <thead>
             <tr>
-              {cols.includes('article') && <th width="12%">Артикул</th>}
-              {cols.includes('name') && <th width="30%">Наименование</th>}
-              {cols.includes('image') && <th width="10%">Фото</th>}
-              {cols.includes('dimensions') && <th width="16%">Размеры</th>}
-              {cols.includes('material') && <th width="14%">Материал</th>}
-              {cols.includes('color') && <th width="10%">Цвет</th>}
-              {cols.includes('price') && <th width="12%">Цена</th>}
+              {cols.includes('article') && <th width='12%'>Артикул</th>}
+              {cols.includes('name') && <th width='30%'>Наименование</th>}
+              {cols.includes('image') && <th width='10%'>Фото</th>}
+              {cols.includes('dimensions') && <th width='16%'>Размеры</th>}
+              {cols.includes('material') && <th width='14%'>Материал</th>}
+              {cols.includes('color') && <th width='10%'>Цвет</th>}
+              {cols.includes('price') && <th width='12%'>Цена</th>}
             </tr>
           </thead>
           <tbody>
             {(products || []).map((p, i) => (
               <tr key={`${p.id}-${i}`}>
-                {cols.includes('article') && <td className="article">{p.article || '-'}</td>}
+                {cols.includes('article') && <td className='article'>{p.article || '-'}</td>}
                 {cols.includes('name') && <td>{p.name || '-'}</td>}
-                {cols.includes('image') && <td><div className="photo-cell">IMG</div></td>}
-                {cols.includes('dimensions') && <td className="dimensions">{p.dimensions || '-'}</td>}
+                {cols.includes('image') && (
+                  <td>
+                    <div className='photo-cell'>IMG</div>
+                  </td>
+                )}
+                {cols.includes('dimensions') && (
+                  <td className='dimensions'>{p.dimensions || '-'}</td>
+                )}
                 {cols.includes('material') && <td>{p.material || '-'}</td>}
                 {cols.includes('color') && (
-                  <td className="color">
-                    <span className="color-dot" style={{ background: '#ffffff' }} />
+                  <td className='color'>
+                    <span className='color-dot' style={{ background: '#ffffff' }} />
                     {p.color || '-'}
                   </td>
                 )}
-                {cols.includes('price') && <td className="price">{(p.base_price || 0).toLocaleString('ru-RU')}</td>}
+                {cols.includes('price') && (
+                  <td className='price'>{(p.base_price || 0).toLocaleString('ru-RU')}</td>
+                )}
               </tr>
             ))}
           </tbody>
         </table>
       </div>
 
-      <div className="page-number">1 / 2</div>
+      <div className='page-number'>1 / 2</div>
     </div>,
 
-    <div key="nordic-2" className="pdf-page" style={pageStyle(font, bg)}>
+    <div key='nordic-2' className='pdf-page' style={pageStyle(font, bg)}>
       <style>{nordicCss(pColor, !!config.striped, config.density || 'regular')}</style>
-      <div className="doc-title">
+      <div className='doc-title'>
         <h1>Условия сотрудничества</h1>
-        <div className="doc-date">Актуально на {documentData.date}</div>
+        <div className='doc-date'>Актуально на {documentData.date}</div>
       </div>
       <div style={{ padding: '18px', background: '#fafbfc', borderRadius: '12px' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: '12px', fontSize: '11px', color: '#7f8c8d' }}>
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(2,1fr)',
+            gap: '12px',
+            fontSize: '11px',
+            color: '#7f8c8d',
+          }}
+        >
           {[
             ['Цены', 'KGS с НДС. Изменения с уведомлением за 14 дней.'],
             ['Оплата', 'Дилеры — по договору. Розница — 100% предоплата.'],
@@ -718,16 +828,19 @@ function renderNordicPages(data: PdfData): JSX.Element[] {
           ].map(([t, d], i) => (
             <div style={{ display: 'flex', gap: '10px', lineHeight: 1.6 }} key={i}>
               <div>●</div>
-              <div><strong>{t}</strong> {d}</div>
+              <div>
+                <strong>{t}</strong> {d}
+              </div>
             </div>
           ))}
         </div>
       </div>
       <div style={{ textAlign: 'center', marginTop: '18px' }}>
-        Ваш менеджер: <strong>{companyData.manager.name}</strong><br />
+        Ваш менеджер: <strong>{companyData.manager.name}</strong>
+        <br />
         <span>{companyData.manager.phone}</span> · <span>{companyData.manager.email}</span>
       </div>
-      <div className="page-number">2 / 2</div>
+      <div className='page-number'>2 / 2</div>
     </div>,
   ]
 }
@@ -743,96 +856,135 @@ function renderExecutivePages(data: PdfData): JSX.Element[] {
   const cols = visibleColumns(config)
 
   return [
-    <div key="executive-1" className="pdf-page" style={pageStyle(font, bg)}>
+    <div key='executive-1' className='pdf-page' style={pageStyle(font, bg)}>
       <style>{executiveCss(pColor, !!config.striped, config.density || 'regular')}</style>
-      <div className="header">
+      <div className='header'>
         <div>
           {companyData.logo ? (
-            <img src={companyData.logo} alt="logo" style={{ height: 40, objectFit: 'contain', marginBottom: 6 }} />
+            <img
+              src={companyData.logo}
+              alt='logo'
+              style={{ height: 40, objectFit: 'contain', marginBottom: 6 }}
+            />
           ) : null}
-          <div className="company-logo" style={{ color: pColor }}>{companyData.name}</div>
-          <div className="company-type">{companyData.tagline}</div>
+          <div className='company-logo' style={{ color: pColor }}>
+            {companyData.name}
+          </div>
+          <div className='company-type'>{companyData.tagline}</div>
         </div>
-        <div className="contact-section">
-          <strong>Кыргызская Республика</strong><br />
-          {companyData.address}<br />
-          <strong>Тел:</strong> {companyData.phone}<br />
-          <strong>Email:</strong> {companyData.email}<br />
+        <div className='contact-section'>
+          <strong>Кыргызская Республика</strong>
+          <br />
+          {companyData.address}
+          <br />
+          <strong>Тел:</strong> {companyData.phone}
+          <br />
+          <strong>Email:</strong> {companyData.email}
+          <br />
           <strong>Web:</strong> {companyData.website}
         </div>
       </div>
 
-      <div className="doc-title"><h1>{documentData.title}</h1></div>
-      <div className="doc-date">Действителен с {documentData.date}</div>
-      <div className="intro"><strong>Уважаемые партнёры и клиенты!</strong><br />Представляем актуальный прайс‑лист.</div>
+      <div className='doc-title'>
+        <h1>{documentData.title}</h1>
+      </div>
+      <div className='doc-date'>Действителен с {documentData.date}</div>
+      <div className='intro'>
+        <strong>Уважаемые партнёры и клиенты!</strong>
+        <br />
+        Представляем актуальный прайс‑лист.
+      </div>
 
-      <div className="section-header">СЕРИЯ / РАЗДЕЛ</div>
-      <table className="product-table">
+      <div className='section-header'>СЕРИЯ / РАЗДЕЛ</div>
+      <table className='product-table'>
         <thead>
           <tr>
-            {cols.includes('article') && <th width="12%">Артикул</th>}
-            {cols.includes('name') && <th width="25%">Наименование</th>}
-            {cols.includes('image') && <th width="12%">Фото</th>}
-            {cols.includes('dimensions') && <th width="18%">Размеры (мм)</th>}
-            {cols.includes('material') && <th width="13%">Материал</th>}
-            {cols.includes('color') && <th width="10%">Цвет</th>}
-            {cols.includes('price') && <th width="10%">Цена (KGS)</th>}
+            {cols.includes('article') && <th width='12%'>Артикул</th>}
+            {cols.includes('name') && <th width='25%'>Наименование</th>}
+            {cols.includes('image') && <th width='12%'>Фото</th>}
+            {cols.includes('dimensions') && <th width='18%'>Размеры (мм)</th>}
+            {cols.includes('material') && <th width='13%'>Материал</th>}
+            {cols.includes('color') && <th width='10%'>Цвет</th>}
+            {cols.includes('price') && <th width='10%'>Цена (KGS)</th>}
           </tr>
         </thead>
         <tbody>
           {(products || []).map((p, i) => (
             <tr key={`${p.id}-${i}`}>
-              {cols.includes('article') && <td className="article">{p.article || '-'}</td>}
+              {cols.includes('article') && <td className='article'>{p.article || '-'}</td>}
               {cols.includes('name') && <td>{p.name || '-'}</td>}
               {cols.includes('image') && (
-                <td className="photo-cell">
+                <td className='photo-cell'>
                   {p.images && p.images[0] ? (
-                    <img src={p.images[0]} alt={p.name} style={{ width: 70, height: 50, objectFit: 'cover', borderRadius: 4 }} />
+                    <img
+                      src={p.images[0]}
+                      alt={p.name}
+                      style={{ width: 70, height: 50, objectFit: 'cover', borderRadius: 4 }}
+                    />
                   ) : (
-                    <div className="photo-placeholder">ФОТО</div>
+                    <div className='photo-placeholder'>ФОТО</div>
                   )}
                 </td>
               )}
-              {cols.includes('dimensions') && <td className="dimensions">{p.dimensions || '-'}</td>}
+              {cols.includes('dimensions') && <td className='dimensions'>{p.dimensions || '-'}</td>}
               {cols.includes('material') && <td>{p.material || '-'}</td>}
               {cols.includes('color') && <td>{p.color || '-'}</td>}
-              {cols.includes('price') && <td className="price">{(p.base_price || 0).toLocaleString('ru-RU')}</td>}
+              {cols.includes('price') && (
+                <td className='price'>{(p.base_price || 0).toLocaleString('ru-RU')}</td>
+              )}
             </tr>
           ))}
         </tbody>
       </table>
 
-      <div className="page-number">Страница 1 из 2</div>
+      <div className='page-number'>Страница 1 из 2</div>
     </div>,
 
-    <div key="executive-2" className="pdf-page" style={pageStyle(font, bg)}>
+    <div key='executive-2' className='pdf-page' style={pageStyle(font, bg)}>
       <style>{executiveCss(pColor, !!config.striped, config.density || 'regular')}</style>
-      <div className="terms">
+      <div className='terms'>
         <h2>Условия сотрудничества</h2>
-        <ul className="terms-list">
-          <li><strong>ЦЕНЫ:</strong> Все цены указаны в KGS и включают НДС. Изменения с уведомлением за 14 дней.</li>
-          <li><strong>ОПЛАТА:</strong> Дилеры — по договору. Розничные клиенты — 100% предоплата.</li>
-          <li><strong>СРОКИ:</strong> В наличии — отгрузка до 3 рабочих дней. Под заказ — 14–21 день.</li>
-          <li><strong>ДОСТАВКА:</strong> Бишкек — бесплатно от 30 000 сом. Регионы КР — по тарифам ТК.</li>
-          <li><strong>ГАРАНТИЯ:</strong> 24 месяца на всю продукцию.</li>
+        <ul className='terms-list'>
+          <li>
+            <strong>ЦЕНЫ:</strong> Все цены указаны в KGS и включают НДС. Изменения с уведомлением
+            за 14 дней.
+          </li>
+          <li>
+            <strong>ОПЛАТА:</strong> Дилеры — по договору. Розничные клиенты — 100% предоплата.
+          </li>
+          <li>
+            <strong>СРОКИ:</strong> В наличии — отгрузка до 3 рабочих дней. Под заказ — 14–21 день.
+          </li>
+          <li>
+            <strong>ДОСТАВКА:</strong> Бишкек — бесплатно от 30 000 сом. Регионы КР — по тарифам ТК.
+          </li>
+          <li>
+            <strong>ГАРАНТИЯ:</strong> 24 месяца на всю продукцию.
+          </li>
         </ul>
       </div>
 
-      <div className="contact-card" style={{ background: `linear-gradient(135deg, ${pColor}, #1e64d1)` }}>
+      <div
+        className='contact-card'
+        style={{ background: `linear-gradient(135deg, ${pColor}, #1e64d1)` }}
+      >
         <h3>МЕНЕДЖЕР ПО РАБОТЕ С КЛИЕНТАМИ</h3>
-        <div className="manager-name">{companyData.manager.name}</div>
-        <div className="manager-contacts">
-          Телефон: <strong>{companyData.manager.phone}</strong><br />
+        <div className='manager-name'>{companyData.manager.name}</div>
+        <div className='manager-contacts'>
+          Телефон: <strong>{companyData.manager.phone}</strong>
+          <br />
           Email: <strong>{companyData.manager.email}</strong>
         </div>
       </div>
 
-      <div className="footer">
-        <div className="footer-company">С уважением, Дирекция мебельной фабрики «{companyData.name}»</div>
+      <div className='footer'>
+        <div className='footer-company'>
+          С уважением, Дирекция мебельной фабрики «{companyData.name}»
+        </div>
         © {new Date().getFullYear()} {companyData.name}. Все права защищены
       </div>
 
-      <div className="page-number">Страница 2 из 2</div>
+      <div className='page-number'>Страница 2 из 2</div>
     </div>,
   ]
 }
@@ -840,7 +992,12 @@ function renderExecutivePages(data: PdfData): JSX.Element[] {
 /**
  * CSS-хелпер: Modern.
  */
-function modernCss(primary: string, accent: string, striped: boolean, density: 'compact' | 'regular' | 'spacious'): string {
+function modernCss(
+  primary: string,
+  accent: string,
+  striped: boolean,
+  density: 'compact' | 'regular' | 'spacious'
+): string {
   const rowPad = density === 'compact' ? '10px' : density === 'spacious' ? '16px' : '12px'
   return `
   * { box-sizing: border-box; } body { font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial; }
@@ -916,7 +1073,11 @@ function modernCss(primary: string, accent: string, striped: boolean, density: '
 /**
  * CSS-хелпер: Nordic.
  */
-function nordicCss(primary: string, striped: boolean, density: 'compact' | 'regular' | 'spacious'): string {
+function nordicCss(
+  primary: string,
+  striped: boolean,
+  density: 'compact' | 'regular' | 'spacious'
+): string {
   const rowPad = density === 'compact' ? '8px' : density === 'spacious' ? '16px' : '12px'
   return `
   * { box-sizing: border-box; } body { font-family: Inter, -apple-system, system-ui, Segoe UI, Roboto, Arial; color:#2c3e50; }
@@ -948,7 +1109,11 @@ function nordicCss(primary: string, striped: boolean, density: 'compact' | 'regu
 /**
  * CSS-хелпер: Executive.
  */
-function executiveCss(primary: string, striped: boolean, density: 'compact' | 'regular' | 'spacious'): string {
+function executiveCss(
+  primary: string,
+  striped: boolean,
+  density: 'compact' | 'regular' | 'spacious'
+): string {
   const rowPad = density === 'compact' ? '8px' : density === 'spacious' ? '14px' : '10px'
   return `
   * { box-sizing: border-box; } body { font-family: Roboto, Inter, -apple-system, system-ui, Segoe UI, Arial; color:#212529; }

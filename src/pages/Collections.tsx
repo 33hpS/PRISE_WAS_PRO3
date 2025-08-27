@@ -13,7 +13,7 @@ import CollectionsManager from '../components/CollectionsManager'
  */
 export default function Collections(): JSX.Element {
   return (
-    <div className="max-w-6xl mx-auto p-6">
+    <div className='max-w-6xl mx-auto p-6'>
       <CollectionsManager />
     </div>
   )

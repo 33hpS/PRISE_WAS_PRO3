@@ -82,10 +82,7 @@ export default function MaterialsManager() {
    */
   const loadMaterials = async () => {
     try {
-      const { data, error } = await supabase
-        .from('materials')
-        .select('*')
-        .order('name')
+      const { data, error } = await supabase.from('materials').select('*').order('name')
 
       if (error) throw error
       setMaterials((data as any) || [])
@@ -104,7 +101,10 @@ export default function MaterialsManager() {
     try {
       if (editingMaterial) {
         // Первая попытка: с type (если есть в форме)
-        let { error } = await supabase.from('materials').update(formData).eq('id', editingMaterial.id)
+        let { error } = await supabase
+          .from('materials')
+          .update(formData)
+          .eq('id', editingMaterial.id)
         // Если в схеме нет колонки type — повторим без неё
         if (error && /type/i.test(error.message || '')) {
           const { type, ...safe } = formData as any
@@ -115,10 +115,10 @@ export default function MaterialsManager() {
         }
       } else {
         // Первая попытка: с type
-        let { error } = await supabase.from('materials').insert([formData], { returning: 'minimal' as const })
+        let { error } = await supabase.from('materials').insert([formData])
         if (error && /type/i.test(error.message || '')) {
           const { type, ...safe } = formData as any
-          const retry = await supabase.from('materials').insert([safe], { returning: 'minimal' as const })
+          const retry = await supabase.from('materials').insert([safe])
           if (retry.error) throw retry.error
         } else if (error) {
           throw error
@@ -183,7 +183,7 @@ export default function MaterialsManager() {
    * Handle Excel file upload for materials import
    */
   const handleExcelUpload = async (files: File[]) => {
-    const excelFile = files.find((file) => file.name.endsWith('.xlsx') || file.name.endsWith('.xls'))
+    const excelFile = files.find(file => file.name.endsWith('.xlsx') || file.name.endsWith('.xls'))
 
     if (!excelFile) {
       alert('Пожалуйста, выберите Excel файл (.xlsx или .xls)')
@@ -251,11 +251,11 @@ export default function MaterialsManager() {
 
         try {
           // Первая попытка — с type
-          let { error } = await supabase.from('materials').insert(chunk, { returning: 'minimal' as const })
+          let { error } = await supabase.from('materials').insert(chunk)
           if (error && /type/i.test(error.message || '')) {
             // Если колонка type отсутствует — повторяем вставку без неё
             const chunkSafe = chunk.map(({ type, ...rest }) => rest)
-            const retry = await supabase.from('materials').insert(chunkSafe as any[], { returning: 'minimal' as const })
+            const retry = await supabase.from('materials').insert(chunkSafe as any[])
             if (retry.error) {
               throw new Error(retry.error.message || 'Ошибка вставки данных (повтор без type)')
             }
@@ -275,7 +275,9 @@ export default function MaterialsManager() {
         }
 
         // Local and global progress
-        setImportProgress((prev) => Math.min(importTotal || materialsToInsert.length, prev + chunk.length))
+        setImportProgress(prev =>
+          Math.min(importTotal || materialsToInsert.length, prev + chunk.length)
+        )
         const percent =
           (Math.min(importTotal || materialsToInsert.length, i + chunk.length) /
             (importTotal || materialsToInsert.length)) *
@@ -283,7 +285,7 @@ export default function MaterialsManager() {
         setProgress(percent)
 
         // Small delay to avoid rate limiting
-        await new Promise((res) => setTimeout(res, 150))
+        await new Promise(res => setTimeout(res, 150))
       }
 
       alert(`Успешно импортировано ${materialsToInsert.length} материалов`)
@@ -314,7 +316,7 @@ export default function MaterialsManager() {
   /**
    * Filter materials based on search and type
    */
-  const filteredMaterials = materials.filter((material) => {
+  const filteredMaterials = materials.filter(material => {
     const matchesSearch =
       material.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (material.article || '').toLowerCase().includes(searchTerm.toLowerCase())
@@ -324,71 +326,73 @@ export default function MaterialsManager() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center p-8">
-        <div className="w-full max-w-md">
-          <div className="h-2 w-full bg-gray-200 rounded">
-            <div className="h-2 w-1/3 bg-gray-400 animate-pulse rounded" />
+      <div className='flex items-center justify-center p-8'>
+        <div className='w-full max-w-md'>
+          <div className='h-2 w-full bg-gray-200 rounded'>
+            <div className='h-2 w-1/3 bg-gray-400 animate-pulse rounded' />
           </div>
-          <p className="mt-3 text-center text-gray-600">Загрузка материалов...</p>
+          <p className='mt-3 text-center text-gray-600'>Загрузка материалов...</p>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-        <h2 className="text-2xl font-bold">Управление материалами</h2>
+    <div className='space-y-6'>
+      <div className='flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between'>
+        <h2 className='text-2xl font-bold'>Управление материалами</h2>
 
-        <div className="flex gap-2">
+        <div className='flex gap-2'>
           <Dialog open={isImportDialogOpen} onOpenChange={setIsImportDialogOpen}>
             <DialogTrigger asChild>
-              <Button variant="outline">
-                <Upload className="w-4 h-4 mr-2" />
+              <Button variant='outline'>
+                <Upload className='w-4 h-4 mr-2' />
                 Загрузить из Excel
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[600px] bg-white dark:bg-slate-900 border border-gray-200 dark:border-gray-800 shadow-xl">
+            <DialogContent className='sm:max-w-[600px] bg-white dark:bg-slate-900 border border-gray-200 dark:border-gray-800 shadow-xl'>
               <DialogHeader>
                 <DialogTitle>Импорт материалов из Excel</DialogTitle>
               </DialogHeader>
 
-              <div className="space-y-4">
+              <div className='space-y-4'>
                 {importedMaterials.length === 0 ? (
                   <div>
-                    <p className="text-sm text-gray-600 mb-4">
-                      Шаблон колонок: <b>Артикул (необязательно)</b>, <b>Наименование</b>, <b>Единица
-                      измерения</b>, <b>Цена</b>.
+                    <p className='text-sm text-gray-600 mb-4'>
+                      Шаблон колонок: <b>Артикул (необязательно)</b>, <b>Наименование</b>,{' '}
+                      <b>Единица измерения</b>, <b>Цена</b>.
                       <br />
                       Поддерживаются цены с запятыми и пробелами (например, 1&nbsp;165,97).
                     </p>
 
                     <FileUpload
-                      title="Выберите Excel файл"
-                      description="Поддерживаемые форматы: .xlsx, .xls"
+                      title='Выберите Excel файл'
+                      description='Поддерживаемые форматы: .xlsx, .xls'
                       acceptedFileTypes={['.xlsx', '.xls']}
                       maxFiles={1}
                       onFilesUploaded={handleExcelUpload}
                     />
 
                     {isImporting && (
-                      <div className="mt-4">
-                        <div className="w-full h-2 bg-gray-100 rounded">
-                          <div className="h-2 w-1/2 bg-blue-500 animate-pulse rounded" />
+                      <div className='mt-4'>
+                        <div className='w-full h-2 bg-gray-100 rounded'>
+                          <div className='h-2 w-1/2 bg-blue-500 animate-pulse rounded' />
                         </div>
-                        <p className="mt-2 text-sm text-blue-600">Обработка файла...</p>
+                        <p className='mt-2 text-sm text-blue-600'>Обработка файла...</p>
                       </div>
                     )}
                   </div>
                 ) : (
                   <div>
-                    <div className="flex items-center justify-between mb-4">
-                      <h4 className="font-medium">Найдено материалов: {importedMaterials.length}</h4>
-                      <div className="flex gap-2">
+                    <div className='flex items-center justify-between mb-4'>
+                      <h4 className='font-medium'>
+                        Найдено материалов: {importedMaterials.length}
+                      </h4>
+                      <div className='flex gap-2'>
                         <Button onClick={handleImportMaterials} disabled={isImporting}>
                           {isImporting ? 'Импорт...' : 'Импортировать все'}
                         </Button>
-                        <Button variant="outline" onClick={handleCancelImport}>
+                        <Button variant='outline' onClick={handleCancelImport}>
                           Отмена
                         </Button>
                       </div>
@@ -396,43 +400,45 @@ export default function MaterialsManager() {
 
                     {/* Progress & error display */}
                     {(isImporting || importProgress > 0 || importError) && (
-                      <div className="mb-3 space-y-2">
-                        <div className="text-xs text-gray-600">
+                      <div className='mb-3 space-y-2'>
+                        <div className='text-xs text-gray-600'>
                           Прогресс: {importProgress} / {importTotal || importedMaterials.length}
                         </div>
-                        <div className="w-full h-2 bg-gray-100 rounded">
+                        <div className='w-full h-2 bg-gray-100 rounded'>
                           <div
-                            className="h-2 bg-blue-500 rounded"
+                            className='h-2 bg-blue-500 rounded'
                             style={{
                               width: `${Math.round(
-                                ((importProgress || 0) / (importTotal || importedMaterials.length)) * 100
+                                ((importProgress || 0) /
+                                  (importTotal || importedMaterials.length)) *
+                                  100
                               )}%`,
                             }}
                           />
                         </div>
-                        {importError && <div className="text-sm text-red-600">{importError}</div>}
+                        {importError && <div className='text-sm text-red-600'>{importError}</div>}
                       </div>
                     )}
 
-                    <div className="max-h-96 overflow-y-auto border rounded-lg">
-                      <table className="w-full text-sm">
-                        <thead className="bg-gray-50 sticky top-0">
+                    <div className='max-h-96 overflow-y-auto border rounded-lg'>
+                      <table className='w-full text-sm'>
+                        <thead className='bg-gray-50 sticky top-0'>
                           <tr>
-                            <th className="p-2 text-left">Артикул</th>
-                            <th className="p-2 text-left">Наименование</th>
-                            <th className="p-2 text-left">Категория</th>
-                            <th className="p-2 text-left">Единица</th>
-                            <th className="p-2 text-left">Цена (сом)</th>
+                            <th className='p-2 text-left'>Артикул</th>
+                            <th className='p-2 text-left'>Наименование</th>
+                            <th className='p-2 text-left'>Категория</th>
+                            <th className='p-2 text-left'>Единица</th>
+                            <th className='p-2 text-left'>Цена (сом)</th>
                           </tr>
                         </thead>
                         <tbody>
                           {importedMaterials.map((material, index) => (
-                            <tr key={index} className="border-t">
-                              <td className="p-2 text-gray-600">{material.article || '—'}</td>
-                              <td className="p-2 font-medium">{material.name}</td>
-                              <td className="p-2 text-gray-600">{material.category}</td>
-                              <td className="p-2">{material.unit}</td>
-                              <td className="p-2">{material.price.toFixed(2)} сом</td>
+                            <tr key={index} className='border-t'>
+                              <td className='p-2 text-gray-600'>{material.article || '—'}</td>
+                              <td className='p-2 font-medium'>{material.name}</td>
+                              <td className='p-2 text-gray-600'>{material.category}</td>
+                              <td className='p-2'>{material.unit}</td>
+                              <td className='p-2'>{material.price.toFixed(2)} сом</td>
                             </tr>
                           ))}
                         </tbody>
@@ -447,40 +453,45 @@ export default function MaterialsManager() {
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
               <Button onClick={resetForm}>
-                <Plus className="w-4 h-4 mr-2" />
+                <Plus className='w-4 h-4 mr-2' />
                 Добавить материал
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[425px] bg-white dark:bg-slate-900 border border-gray-200 dark:border-gray-800 shadow-xl sm:rounded-lg">
+            <DialogContent className='sm:max-w-[425px] bg-white dark:bg-slate-900 border border-gray-200 dark:border-gray-800 shadow-xl sm:rounded-lg'>
               <DialogHeader>
-                <DialogTitle>{editingMaterial ? 'Редактировать материал' : 'Добавить материал'}</DialogTitle>
+                <DialogTitle>
+                  {editingMaterial ? 'Редактировать материал' : 'Добавить материал'}
+                </DialogTitle>
               </DialogHeader>
-              <form onSubmit={handleSubmit} className="space-y-4">
+              <form onSubmit={handleSubmit} className='space-y-4'>
                 <div>
-                  <Label htmlFor="name">Наименование</Label>
+                  <Label htmlFor='name'>Наименование</Label>
                   <Input
-                    id="name"
+                    id='name'
                     value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    onChange={e => setFormData({ ...formData, name: e.target.value })}
                     required
                   />
                 </div>
                 <div>
-                  <Label htmlFor="article">Артикул</Label>
+                  <Label htmlFor='article'>Артикул</Label>
                   <Input
-                    id="article"
+                    id='article'
                     value={formData.article}
-                    onChange={(e) => setFormData({ ...formData, article: e.target.value })}
+                    onChange={e => setFormData({ ...formData, article: e.target.value })}
                   />
                 </div>
                 <div>
-                  <Label htmlFor="type">Тип материала</Label>
-                  <Select value={formData.type} onValueChange={(value) => setFormData({ ...formData, type: value })}>
+                  <Label htmlFor='type'>Тип материала</Label>
+                  <Select
+                    value={formData.type}
+                    onValueChange={value => setFormData({ ...formData, type: value })}
+                  >
                     <SelectTrigger>
-                      <SelectValue placeholder="Выберите тип" />
+                      <SelectValue placeholder='Выберите тип' />
                     </SelectTrigger>
                     <SelectContent>
-                      {materialTypes.map((type) => (
+                      {materialTypes.map(type => (
                         <SelectItem key={type} value={type}>
                           {type}
                         </SelectItem>
@@ -489,13 +500,16 @@ export default function MaterialsManager() {
                   </Select>
                 </div>
                 <div>
-                  <Label htmlFor="unit">Единица измерения</Label>
-                  <Select value={formData.unit} onValueChange={(value) => setFormData({ ...formData, unit: value })}>
+                  <Label htmlFor='unit'>Единица измерения</Label>
+                  <Select
+                    value={formData.unit}
+                    onValueChange={value => setFormData({ ...formData, unit: value })}
+                  >
                     <SelectTrigger>
-                      <SelectValue placeholder="Выберите единицу" />
+                      <SelectValue placeholder='Выберите единицу' />
                     </SelectTrigger>
                     <SelectContent>
-                      {units.map((unit) => (
+                      {units.map(unit => (
                         <SelectItem key={unit} value={unit}>
                           {unit}
                         </SelectItem>
@@ -504,21 +518,23 @@ export default function MaterialsManager() {
                   </Select>
                 </div>
                 <div>
-                  <Label htmlFor="price">Цена</Label>
+                  <Label htmlFor='price'>Цена</Label>
                   <Input
-                    id="price"
-                    type="number"
-                    step="0.01"
+                    id='price'
+                    type='number'
+                    step='0.01'
                     value={formData.price}
-                    onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) || 0 })}
+                    onChange={e =>
+                      setFormData({ ...formData, price: parseFloat(e.target.value) || 0 })
+                    }
                     required
                   />
                 </div>
-                <div className="flex gap-2">
-                  <Button type="submit" className="flex-1">
+                <div className='flex gap-2'>
+                  <Button type='submit' className='flex-1'>
                     {editingMaterial ? 'Сохранить' : 'Добавить'}
                   </Button>
-                  <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
+                  <Button type='button' variant='outline' onClick={() => setIsDialogOpen(false)}>
                     Отмена
                   </Button>
                 </div>
@@ -528,26 +544,26 @@ export default function MaterialsManager() {
         </div>
       </div>
 
-      <div className="flex flex-col sm:flex-row gap-4">
-        <div className="flex-1">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+      <div className='flex flex-col sm:flex-row gap-4'>
+        <div className='flex-1'>
+          <div className='relative'>
+            <Search className='absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4' />
             <Input
-              placeholder="Поиск по названию или артикулу..."
+              placeholder='Поиск по названию или артикулу...'
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
+              onChange={e => setSearchTerm(e.target.value)}
+              className='pl-10'
             />
           </div>
         </div>
-        <div className="sm:w-64">
+        <div className='sm:w-64'>
           <Select value={filterType} onValueChange={setFilterType}>
             <SelectTrigger>
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Все типы</SelectItem>
-              {materialTypes.map((type) => (
+              <SelectItem value='all'>Все типы</SelectItem>
+              {materialTypes.map(type => (
                 <SelectItem key={type} value={type}>
                   {type}
                 </SelectItem>
@@ -557,31 +573,33 @@ export default function MaterialsManager() {
         </div>
       </div>
 
-      <div className="grid gap-4">
+      <div className='grid gap-4'>
         {filteredMaterials.length === 0 ? (
           <Card>
-            <CardContent className="p-8 text-center">
-              <p className="text-gray-500">Материалы не найдены</p>
+            <CardContent className='p-8 text-center'>
+              <p className='text-gray-500'>Материалы не найдены</p>
             </CardContent>
           </Card>
         ) : (
-          filteredMaterials.map((material) => (
+          filteredMaterials.map(material => (
             <Card key={material.id}>
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex-1">
-                    <h3 className="font-semibold text-lg">{material.name}</h3>
-                    <p className="text-sm text-gray-600">Артикул: {material.article || '—'} | Тип: {material.type || '—'}</p>
-                    <p className="text-sm text-gray-600">
+              <CardContent className='p-4'>
+                <div className='flex items-center justify-between'>
+                  <div className='flex-1'>
+                    <h3 className='font-semibold text-lg'>{material.name}</h3>
+                    <p className='text-sm text-gray-600'>
+                      Артикул: {material.article || '—'} | Тип: {material.type || '—'}
+                    </p>
+                    <p className='text-sm text-gray-600'>
                       Цена: {material.price} сом/{material.unit}
                     </p>
                   </div>
-                  <div className="flex gap-2">
-                    <Button variant="outline" size="sm" onClick={() => handleEdit(material)}>
-                      <Edit2 className="w-4 h-4" />
+                  <div className='flex gap-2'>
+                    <Button variant='outline' size='sm' onClick={() => handleEdit(material)}>
+                      <Edit2 className='w-4 h-4' />
                     </Button>
-                    <Button variant="outline" size="sm" onClick={() => handleDelete(material.id)}>
-                      <Trash2 className="w-4 h-4" />
+                    <Button variant='outline' size='sm' onClick={() => handleDelete(material.id)}>
+                      <Trash2 className='w-4 h-4' />
                     </Button>
                   </div>
                 </div>
