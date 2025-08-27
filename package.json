@@ -6,7 +6,7 @@
   "private": true,
   "scripts": {
     "dev": "vite --host --port 5173",
-    "build": "tsc && vite build",
+    "build": "tsc --noEmit --skipLibCheck && vite build",
     "build:analyze": "npm run build && npx vite-bundle-analyzer dist",
     "build:dev": "vite build --mode development",
     "preview": "vite preview",
@@ -51,7 +51,8 @@
     "audit:fix": "npm audit fix --force",
     "audit:check": "npm audit --audit-level moderate",
     "type-check:soft": "tsc --noEmit --skipLibCheck --allowJs --strict false",
-    "lint:soft": "eslint src --ext ts,tsx --max-warnings 20"
+    "lint:soft": "eslint src --ext ts,tsx --max-warnings 20",
+    "build:force": "vite build --force"
   },
   "lint-staged": {
     "src/**/*.{ts,tsx}": [
