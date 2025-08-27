@@ -1,7 +1,12 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import path from 'path'
+import { fileURLToPath } from 'url'
 
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
+
+// https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
   resolve: {
@@ -9,23 +14,15 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
+  css: {
+    postcss: './postcss.config.js',
+  },
+  server: {
+    port: 5173,
+    host: true,
+  },
   build: {
-    rollupOptions: {
-      output: {
-        manualChunks: undefined,
-      },
-    },
-    target: 'es2015',
-    sourcemap: false,
-    minify: 'esbuild',
-  },
-  esbuild: {
-    logOverride: { 
-      'this-is-undefined-in-esm': 'silent',
-      'empty-import-meta': 'silent'
-    }
-  },
-  define: {
-    global: 'globalThis',
+    outDir: 'dist',
+    sourcemap: true,
   },
 })

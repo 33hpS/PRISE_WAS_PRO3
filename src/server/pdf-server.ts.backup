@@ -1,0 +1,381 @@
+import jsPDF from 'jspdf'
+import autoTable from 'jspdf-autotable'
+import { Product } from '../types/product'
+
+// Регистрация шрифтов для поддержки русского языка
+const registerFonts = (doc: jsPDF) => {
+  // Здесь можно добавить кастомные шрифты если нужно
+  // doc.addFont('path/to/font.ttf', 'CustomFont', 'normal')
+}
+
+interface PriceListOptions {
+  title?: string
+  showImages?: boolean
+  showMaterials?: boolean
+  columns?: string[]
+  markup?: number
+  currency?: string
+  dateFormat?: string
+}
+
+export class PDFGenerator {
+  private doc: jsPDF
+
+  constructor() {
+    this.doc = new jsPDF({
+      orientation: 'portrait',
+      unit: 'mm',
+      format: 'a4',
+    })
+  }
+
+  /**
+   * Генерирует PDF прайс-лист
+   */
+  generatePriceList(products: Product[], options: PriceListOptions = {}): Blob {
+    const {
+      title = 'Прайс-лист WASSER',
+      showImages = true,
+      showMaterials = true,
+      columns = ['name', 'collection', 'materials', 'price'],
+      markup = 0,
+      currency = '₽',
+      dateFormat = 'DD.MM.YYYY',
+    } = options
+
+    // Сброс документа
+    this.doc = new jsPDF({
+      orientation: 'portrait',
+      unit: 'mm',
+      format: 'a4',
+    })
+
+    // Регистрация шрифтов
+    registerFonts(this.doc)
+
+    // Заголовок
+    this.addHeader(title)
+
+    // Дата генерации
+    this.addDate(dateFormat)
+
+    // Таблица товаров
+    this.addProductsTable(products, {
+      columns,
+      showImages,
+      showMaterials,
+      markup,
+      currency,
+    })
+
+    // Футер
+    this.addFooter()
+
+    // Возврат blob для скачивания
+    return this.doc.output('blob')
+  }
+
+  /**
+   * Добавляет заголовок документа
+   */
+  private addHeader(title: string): void {
+    this.doc.setFontSize(24)
+    this.doc.text(title, 105, 20, { align: 'center' })
+
+    // Добавляем логотип если нужно
+    // this.doc.addImage(logoBase64, 'PNG', 10, 10, 30, 30)
+
+    this.doc.setFontSize(12)
+    this.doc.text('Мебельная фабрика', 105, 30, { align: 'center' })
+  }
+
+  /**
+   * Добавляет дату генерации
+   */
+  private addDate(format: string): void {
+    const date = new Date().toLocaleDateString('ru-RU')
+    this.doc.setFontSize(10)
+    this.doc.text(`Дата: ${date}`, 20, 40)
+  }
+
+  /**
+   * Добавляет таблицу с товарами
+   */
+  private addProductsTable(
+    products: Product[],
+    options: {
+      columns: string[]
+      showImages: boolean
+      showMaterials: boolean
+      markup: number
+      currency: string
+    },
+  ): void {
+    const headers = this.getTableHeaders(options.columns)
+    const data = this.prepareTableData(products, options)
+
+    autoTable(this.doc, {
+      startY: 50,
+      head: [headers],
+      body: data,
+      styles: {
+        font: 'helvetica',
+        fontSize: 10,
+        cellPadding: 3,
+      },
+      headStyles: {
+        fillColor: [51, 51, 51],
+        textColor: [255, 255, 255],
+        fontStyle: 'bold',
+      },
+      alternateRowStyles: {
+        fillColor: [245, 245, 245],
+      },
+      columnStyles: {
+        0: { cellWidth: 20 }, // Артикул
+        1: { cellWidth: 60 }, // Название
+        2: { cellWidth: 30 }, // Коллекция
+        3: { cellWidth: 50 }, // Материалы
+        4: { cellWidth: 30 }, // Цена
+      },
+    })
+  }
+
+  /**
+   * Возвращает заголовки таблицы
+   */
+  private getTableHeaders(columns: string[]): string[] {
+    const headerMap: Record<string, string> = {
+      article: 'Артикул',
+      name: 'Название',
+      collection: 'Коллекция',
+      materials: 'Материалы',
+      price: 'Цена',
+      dimensions: 'Размеры',
+      description: 'Описание',
+    }
+
+    return columns.map((col) => headerMap[col] || col)
+  }
+
+  /**
+   * Подготавливает данные для таблицы
+   */
+  private prepareTableData(
+    products: Product[],
+    options: {
+      columns: string[]
+      markup: number
+      currency: string
+      showMaterials: boolean
+    },
+  ): any[][] {
+    return products.map((product) => {
+      const row: any[] = []
+
+      options.columns.forEach((col) => {
+        switch (col) {
+          case 'article':
+            row.push(product.article || '-')
+            break
+          case 'name':
+            row.push(product.name)
+            break
+          case 'collection':
+            row.push(product.collection?.name || '-')
+            break
+          case 'materials':
+            if (options.showMaterials && product.materials) {
+              const materials = product.materials.map((m) => m.name).join(', ')
+              row.push(materials || '-')
+            } else {
+              row.push('-')
+            }
+            break
+          case 'price':
+            const price = this.calculatePrice(product.basePrice, options.markup)
+            row.push(`${price.toLocaleString('ru-RU')} ${options.currency}`)
+            break
+          case 'dimensions':
+            if (product.dimensions) {
+              const { width, height, depth } = product.dimensions
+              row.push(`${width}x${height}x${depth} мм`)
+            } else {
+              row.push('-')
+            }
+            break
+          case 'description':
+            row.push(product.description || '-')
+            break
+          default:
+            row.push('-')
+        }
+      })
+
+      return row
+    })
+  }
+
+  /**
+   * Рассчитывает цену с наценкой
+   */
+  private calculatePrice(basePrice: number, markup: number): number {
+    return Math.round(basePrice * (1 + markup / 100))
+  }
+
+  /**
+   * Добавляет футер документа
+   */
+  private addFooter(): void {
+    const pageCount = this.doc.getNumberOfPages()
+
+    for (let i = 1; i <= pageCount; i++) {
+      this.doc.setPage(i)
+      const pageHeight = this.doc.internal.pageSize.height
+
+      // Контактная информация
+      this.doc.setFontSize(9)
+      this.doc.text(
+        'Контакты: +7 (XXX) XXX-XX-XX | info@wasser.ru | www.wasser.ru',
+        105,
+        pageHeight - 15,
+        { align: 'center' },
+      )
+
+      // Номер страницы
+      this.doc.text(`Страница ${i} из ${pageCount}`, 105, pageHeight - 10, { align: 'center' })
+    }
+  }
+
+  /**
+   * Генерирует каталог с изображениями
+   */
+  async generateCatalog(
+    products: Product[],
+    options: {
+      imagesPerPage?: number
+      showPrices?: boolean
+      showDescriptions?: boolean
+    } = {},
+  ): Promise<Blob> {
+    const { imagesPerPage = 4, showPrices = true, showDescriptions = true } = options
+
+    this.doc = new jsPDF({
+      orientation: 'portrait',
+      unit: 'mm',
+      format: 'a4',
+    })
+
+    // Заголовок каталога
+    this.addHeader('Каталог продукции WASSER')
+
+    let currentY = 50
+    let currentPage = 1
+    let itemsOnPage = 0
+
+    for (const product of products) {
+      // Проверяем, нужна ли новая страница
+      if (itemsOnPage >= imagesPerPage) {
+        this.doc.addPage()
+        currentPage++
+        currentY = 20
+        itemsOnPage = 0
+      }
+
+      // Добавляем информацию о продукте
+      this.addProductCard(product, currentY, {
+        showPrice: showPrices,
+        showDescription: showDescriptions,
+      })
+
+      currentY += 60 // Высота карточки товара
+      itemsOnPage++
+    }
+
+    // Добавляем футер
+    this.addFooter()
+
+    return this.doc.output('blob')
+  }
+
+  /**
+   * Добавляет карточку товара в каталог
+   */
+  private addProductCard(
+    product: Product,
+    yPosition: number,
+    options: {
+      showPrice: boolean
+      showDescription: boolean
+    },
+  ): void {
+    const leftMargin = 20
+    const cardWidth = 170
+
+    // Рамка карточки
+    this.doc.setDrawColor(200, 200, 200)
+    this.doc.rect(leftMargin, yPosition, cardWidth, 55)
+
+    // Изображение товара (если есть)
+    if (product.images && product.images.length > 0) {
+      // Здесь должна быть логика добавления изображения
+      // this.doc.addImage(product.images[0], 'JPEG', leftMargin + 5, yPosition + 5, 40, 40)
+    }
+
+    // Информация о товаре
+    const textX = leftMargin + 50
+
+    // Название
+    this.doc.setFontSize(12)
+    this.doc.setFont('helvetica', 'bold')
+    this.doc.text(product.name, textX, yPosition + 10)
+
+    // Артикул
+    this.doc.setFontSize(10)
+    this.doc.setFont('helvetica', 'normal')
+    this.doc.text(`Арт: ${product.article}`, textX, yPosition + 18)
+
+    // Коллекция
+    if (product.collection) {
+      this.doc.text(`Коллекция: ${product.collection.name}`, textX, yPosition + 25)
+    }
+
+    // Описание
+    if (options.showDescription && product.description) {
+      this.doc.setFontSize(9)
+      const lines = this.doc.splitTextToSize(product.description, cardWidth - 60)
+      this.doc.text(lines, textX, yPosition + 32)
+    }
+
+    // Цена
+    if (options.showPrice) {
+      this.doc.setFontSize(14)
+      this.doc.setFont('helvetica', 'bold')
+      this.doc.text(
+        `${product.basePrice.toLocaleString('ru-RU')} ₽`,
+        leftMargin + cardWidth - 40,
+        yPosition + 48,
+      )
+    }
+  }
+}
+
+// Экспорт функций для использования
+export const generatePDF = (products: Product[], options?: PriceListOptions): Blob => {
+  const generator = new PDFGenerator()
+  return generator.generatePriceList(products, options)
+}
+
+export const generateCatalogPDF = async (
+  products: Product[],
+  options?: {
+    imagesPerPage?: number
+    showPrices?: boolean
+    showDescriptions?: boolean
+  },
+): Promise<Blob> => {
+  const generator = new PDFGenerator()
+  return generator.generateCatalog(products, options)
+}
+
+export default PDFGenerator
