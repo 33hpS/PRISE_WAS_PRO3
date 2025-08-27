@@ -89,3 +89,7 @@ out/
 # Database
 *.db
 *.sqlite
+node_modules/
+dist/
+*.log
+.env.local
