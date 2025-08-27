@@ -1,6 +1,7 @@
 /**
- * Home page component: main dashboard with navigation and feature panels.
- * Contains overview metrics, quick actions, price-list and labels generators, and admin sections.
+ * @file Home.tsx
+ * @description Главная панель управления: навигация по разделам, карточки метрик, виджеты и защищённые секции.
+ * Избавлено от использования шаблонных строк (бэктиков) в className, чтобы исключить синтаксические ошибки сборки.
  */
 
 import { useEffect, useState } from 'react'
@@ -26,7 +27,16 @@ import { supabase } from '../lib/supabase'
 import CurrencyRates from '../components/CurrencyRates'
 
 /**
- * Tabs available in the dashboard
+ * @description Утилита объединения классов без шаблонных строк.
+ * @param classes Набор строк/условий для объединения
+ * @returns Строка с классами
+ */
+function cx(...classes: Array<string | false | null | undefined>): string {
+  return classes.filter(Boolean).join(' ')
+}
+
+/**
+ * @description Доступные вкладки панели
  */
 type DashboardTab =
   | 'overview'
@@ -40,7 +50,9 @@ type DashboardTab =
   | 'history'
   | 'users'
 
-/** Lightweight stats shape for overview cards */
+/**
+ * @description Лёгкая модель статистики для карточек обзора
+ */
 interface OverviewStats {
   materials: number
   products: number
@@ -49,7 +61,8 @@ interface OverviewStats {
 }
 
 /**
- * Home: Main dashboard with navigation, auth-protected content and feature panels.
+ * @component Home
+ * @description Главная панель с навигацией, метриками и защищёнными разделами.
  */
 export default function Home() {
   const [user, setUser] = useState<UserWithRole | null>(null)
@@ -69,7 +82,10 @@ export default function Home() {
     void loadStats()
   }, [])
 
-  /** Load current user with role or redirect to login */
+  /**
+   * @function loadUser
+   * @description Загружает текущего пользователя с ролью или перенаправляет на /login
+   */
   const loadUser = async () => {
     try {
       const currentUser = await getCurrentUserWithRole()
@@ -86,7 +102,10 @@ export default function Home() {
     }
   }
 
-  /** Load overview counters (resilient to missing tables) */
+  /**
+   * @function loadStats
+   * @description Загружает счётчики для раздела «Обзор». Невалящиеся запросы.
+   */
   const loadStats = async () => {
     try {
       const [materialsResult, productsResult, collectionsResult, priceListsResult] = await Promise.all([
@@ -124,7 +143,10 @@ export default function Home() {
     }
   }
 
-  /** Logout handler: clears local store and redirects to login */
+  /**
+   * @function handleLogout
+   * @description Выход из аккаунта: очищает локальные записи и разлогинивает в Supabase
+   */
   const handleLogout = async () => {
     try {
       localStorage.removeItem('test-user')
@@ -147,7 +169,10 @@ export default function Home() {
     )
   }
 
-  /** Helper: returns label for breadcrumb by active tab */
+  /**
+   * @function breadcrumbLabel
+   * @description Заголовок хлебных крошек по активной вкладке
+   */
   const breadcrumbLabel = (tab: DashboardTab): string => {
     switch (tab) {
       case 'overview':
@@ -175,12 +200,21 @@ export default function Home() {
     }
   }
 
+  // Вычисляемые классы для «Быстрый старт»
+  const quickGridCols = user?.role === 'admin'
+    ? ['grid', 'gap-4', 'grid-cols-1', 'md:grid-cols-4'].join(' ')
+    : ['grid', 'gap-4', 'grid-cols-1', 'md:grid-cols-2'].join(' ')
+
+  // Базовые классы для навигационных кнопок
+  const navBtnBase = 'flex items-center gap-2 px-4 py-2.5 rounded-lg border border-transparent hover:bg-gray-50 transition-all duration-200'
+  const adminBtnBase = 'flex items-center gap-2 px-3 py-2 rounded-lg border border-transparent hover:bg-gray-50 transition-all duration-200'
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Header user={user} onLogout={handleLogout} />
 
       <main className="container mx-auto px-4 py-8">
-        {/* Title area + mobile logout */}
+        {/* Заголовок + выход на мобилке */}
         <div className="mb-8">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
@@ -201,7 +235,7 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Mobile Navigation (select) */}
+        {/* Мобильная навигация (select) */}
         <div className="flex lg:hidden mb-6">
           <Card className="w-full">
             <CardContent className="p-3">
@@ -234,7 +268,7 @@ export default function Home() {
           </Card>
         </div>
 
-        {/* Desktop Navigation */}
+        {/* Десктопная навигация (кнопки) */}
         <div className="hidden lg:block">
           <div className="space-y-6">
             <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
@@ -245,13 +279,13 @@ export default function Home() {
                       <h3 className="text-sm font-semibold text-gray-600 px-3 py-2">Основные</h3>
                     </div>
 
-                    {/* Main buttons */}
                     <div className="grid grid-cols-3 gap-1 p-0">
                       <button
                         onClick={() => setActiveTab('overview')}
-                        className={`flex items-center gap-2 px-4 py-2.5 rounded-lg border border-transparent hover:bg-gray-50 transition-all duration-200 ${
-                          activeTab === 'overview' ? 'bg-blue-50 text-blue-700 border-blue-200' : ''
-                        }`}
+                        className={cx(
+                          navBtnBase,
+                          activeTab === 'overview' && 'bg-blue-50 text-blue-700 border-blue-200'
+                        )}
                       >
                         <Package className="w-4 h-4" />
                         <span className="font-medium">Обзор</span>
@@ -259,9 +293,10 @@ export default function Home() {
 
                       <button
                         onClick={() => setActiveTab('generator')}
-                        className={`flex items-center gap-2 px-4 py-2.5 rounded-lg border border-transparent hover:bg-gray-50 transition-all duration-200 ${
-                          activeTab === 'generator' ? 'bg-green-50 text-green-700 border-green-200' : ''
-                        }`}
+                        className={cx(
+                          navBtnBase,
+                          activeTab === 'generator' && 'bg-green-50 text-green-700 border-green-200'
+                        )}
                       >
                         <FileText className="w-4 h-4" />
                         <span className="font-medium">Прайс-лист</span>
@@ -269,16 +304,16 @@ export default function Home() {
 
                       <button
                         onClick={() => setActiveTab('labels')}
-                        className={`flex items-center gap-2 px-4 py-2.5 rounded-lg border border-transparent hover:bg-gray-50 transition-all duration-200 ${
-                          activeTab === 'labels' ? 'bg-orange-50 text-orange-700 border-orange-200' : ''
-                        }`}
+                        className={cx(
+                          navBtnBase,
+                          activeTab === 'labels' && 'bg-orange-50 text-orange-700 border-orange-200'
+                        )}
                       >
                         <Package className="w-4 h-4" />
                         <span className="font-medium">Этикетки</span>
                       </button>
                     </div>
 
-                    {/* Admin section */}
                     {user?.role === 'admin' && (
                       <div className="mt-4">
                         <div className="flex items-center space-x-1 mb-2 px-3">
@@ -291,9 +326,10 @@ export default function Home() {
                         <div className="grid grid-cols-3 gap-1">
                           <button
                             onClick={() => setActiveTab('upload')}
-                            className={`flex items-center gap-2 px-3 py-2 rounded-lg border border-transparent hover:bg-gray-50 transition-all duration-200 ${
-                              activeTab === 'upload' ? 'bg-purple-50 text-purple-700 border-purple-200' : ''
-                            }`}
+                            className={cx(
+                              adminBtnBase,
+                              activeTab === 'upload' && 'bg-purple-50 text-purple-700 border-purple-200'
+                            )}
                           >
                             <Upload className="w-4 h-4" />
                             <span className="text-sm font-medium">Загрузка</span>
@@ -301,9 +337,10 @@ export default function Home() {
 
                           <button
                             onClick={() => setActiveTab('materials')}
-                            className={`flex items-center gap-2 px-3 py-2 rounded-lg border border-transparent hover:bg-gray-50 transition-all duration-200 ${
-                              activeTab === 'materials' ? 'bg-blue-50 text-blue-700 border-blue-200' : ''
-                            }`}
+                            className={cx(
+                              adminBtnBase,
+                              activeTab === 'materials' && 'bg-blue-50 text-blue-700 border-blue-200'
+                            )}
                           >
                             <Database className="w-4 h-4" />
                             <span className="text-sm font-medium">Материалы</span>
@@ -311,9 +348,10 @@ export default function Home() {
 
                           <button
                             onClick={() => setActiveTab('products')}
-                            className={`flex items-center gap-2 px-3 py-2 rounded-lg border border-transparent hover:bg-gray-50 transition-all duration-200 ${
-                              activeTab === 'products' ? 'bg-green-50 text-green-700 border-green-200' : ''
-                            }`}
+                            className={cx(
+                              adminBtnBase,
+                              activeTab === 'products' && 'bg-green-50 text-green-700 border-green-200'
+                            )}
                           >
                             <Package className="w-4 h-4" />
                             <span className="text-sm font-medium">Продукция</span>
@@ -321,9 +359,10 @@ export default function Home() {
 
                           <button
                             onClick={() => setActiveTab('collections')}
-                            className={`flex items-center gap-2 px-3 py-2 rounded-lg border border-transparent hover:bg-gray-50 transition-all duration-200 ${
-                              activeTab === 'collections' ? 'bg-yellow-50 text-yellow-700 border-yellow-200' : ''
-                            }`}
+                            className={cx(
+                              adminBtnBase,
+                              activeTab === 'collections' && 'bg-yellow-50 text-yellow-700 border-yellow-200'
+                            )}
                           >
                             <Package className="w-4 h-4" />
                             <span className="text-sm font-medium">Коллекции</span>
@@ -331,9 +370,10 @@ export default function Home() {
 
                           <button
                             onClick={() => setActiveTab('types')}
-                            className={`flex items-center gap-2 px-3 py-2 rounded-lg border border-transparent hover:bg-gray-50 transition-all duration-200 ${
-                              activeTab === 'types' ? 'bg-indigo-50 text-indigo-700 border-indigo-200' : ''
-                            }`}
+                            className={cx(
+                              adminBtnBase,
+                              activeTab === 'types' && 'bg-indigo-50 text-indigo-700 border-indigo-200'
+                            )}
                           >
                             <Settings className="w-4 h-4" />
                             <span className="text-sm font-medium">Типы</span>
@@ -341,9 +381,10 @@ export default function Home() {
 
                           <button
                             onClick={() => setActiveTab('history')}
-                            className={`flex items-center gap-2 px-3 py-2 rounded-lg border border-transparent hover:bg-gray-50 transition-all duration-200 ${
-                              activeTab === 'history' ? 'bg-gray-50 text-gray-700 border-gray-200' : ''
-                            }`}
+                            className={cx(
+                              adminBtnBase,
+                              activeTab === 'history' && 'bg-gray-50 text-gray-700 border-gray-200'
+                            )}
                           >
                             <Eye className="w-4 h-4" />
                             <span className="text-sm font-medium">История</span>
@@ -351,9 +392,11 @@ export default function Home() {
 
                           <button
                             onClick={() => setActiveTab('users')}
-                            className={`col-span-2 flex items-center gap-2 px-3 py-2 rounded-lg border border-transparent hover:bg-gray-50 transition-all duration-200 ${
-                              activeTab === 'users' ? 'bg-red-50 text-red-700 border-red-200' : ''
-                            }`}
+                            className={cx(
+                              'col-span-2',
+                              adminBtnBase,
+                              activeTab === 'users' && 'bg-red-50 text-red-700 border-red-200'
+                            )}
                           >
                             <Users className="w-4 h-4" />
                             <span className="text-sm font-medium">Пользователи</span>
@@ -366,7 +409,7 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Breadcrumb */}
+            {/* Хлебные крошки */}
             <div className="mb-4">
               <div className="flex items-center space-x-2 text-sm">
                 <span className="text-gray-500">Главная</span>
@@ -375,11 +418,11 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Desktop content by activeTab */}
+            {/* Контент для десктопа */}
             <div className="space-y-6">
               {activeTab === 'overview' && (
                 <div className="space-y-6">
-                  {/* Top metrics */}
+                  {/* Метрики */}
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                     <Card className="bg-white border border-gray-200">
                       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -434,10 +477,10 @@ export default function Home() {
                     </Card>
                   </div>
 
-                  {/* Currency rates widget */}
+                  {/* Курс валют */}
                   <CurrencyRates />
 
-                  {/* Quick start */}
+                  {/* Быстрый старт */}
                   <Card className="bg-white border border-gray-200">
                     <CardHeader>
                       <CardTitle className="flex items-center gap-2">
@@ -447,11 +490,7 @@ export default function Home() {
                       <CardDescription>Основные действия для работы с системой</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                      <div
-                        className={`grid gap-4 ${
-                          user?.role === 'admin' ? 'grid-cols-1 md:grid-cols-4' : 'grid-cols-1 md:grid-cols-2'
-                        }`}
-                      >
+                      <div className={quickGridCols}>
                         <Button
                           onClick={() => setActiveTab('generator')}
                           variant="outline"
@@ -663,7 +702,7 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Mobile breadcrumb + content */}
+        {/* Мобильная «хлебная крошка» + контент */}
         <div className="lg:hidden">
           <div className="mb-4">
             <div className="flex items-center space-x-2 text-sm">
@@ -673,7 +712,6 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Mobile content mirrors desktop conditions */}
           <div className="space-y-6">
             {activeTab === 'overview' && (
               <div className="space-y-6">
@@ -731,7 +769,7 @@ export default function Home() {
                   </Card>
                 </div>
 
-                {/* Currency rates widget (mobile) */}
+                {/* Курсы валют (моб.) */}
                 <CurrencyRates />
 
                 <Card className="bg-white border border-gray-200">
@@ -743,11 +781,7 @@ export default function Home() {
                     <CardDescription>Основные действия для работы с системой</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    <div
-                      className={`grid gap-4 ${
-                        user?.role === 'admin' ? 'grid-cols-1 md:grid-cols-4' : 'grid-cols-1 md:grid-cols-2'
-                      }`}
-                    >
+                    <div className={quickGridCols}>
                       <Button
                         onClick={() => setActiveTab('generator')}
                         variant="outline"

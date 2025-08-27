@@ -9,7 +9,7 @@ const execAsync = promisify(exec)
  * Build script for the application
  * - JS -> dist/main.js (IIFE)
  * - CSS -> dist/main.css (Tailwind + shadcn.css)
- * - HTML -> dist/index.html (без inline-стилей)
+ * - HTML -> dist/index.html (no inline styles; CSP meta included for local preview)
  * - Copies Cloudflare Pages files: _headers, public/_redirects
  */
 
@@ -157,14 +157,29 @@ function cleanupTempFiles() {
   })
 }
 
-/** Generate HTML file (no inline style) */
+/** Generate HTML file (no inline style; CSP meta for local preview) */
 function generateHTML() {
   console.log('Generating HTML...')
+
+  const csp = [
+    "default-src 'self'",
+    "base-uri 'self'",
+    "frame-ancestors 'self'",
+    "object-src 'none'",
+    "form-action 'self'",
+    'upgrade-insecure-requests',
+    "script-src 'self'",
+    "style-src 'self' 'unsafe-inline'",
+    "img-src 'self' data: blob: https://i.ibb.co https://fpgzozsspaipegxcfzug.supabase.co https://sider.ai",
+    "connect-src 'self' https://open.er-api.com https://api.open-meteo.com https://fpgzozsspaipegxcfzug.supabase.co wss://fpgzozsspaipegxcfzug.supabase.co",
+    "font-src 'self' data:"
+  ].join('; ')
 
   const html = `<!DOCTYPE html>
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy" content="${csp}">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Мебельная фабрика - Генератор прайс-листов</title>
   <link rel="stylesheet" href="./main.css">
