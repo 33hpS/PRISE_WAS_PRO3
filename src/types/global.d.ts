@@ -9,7 +9,7 @@ declare module 'sonner' {
   export const toast: any
 }
 
-// Расширение для React.startTransition
+// Расширение для React.startTransition (React Router v7 support)
 declare namespace React {
   function startTransition(callback: () => void): void
 }
@@ -25,4 +25,40 @@ interface Window {
 interface SupabaseInsertOptions {
   count?: 'exact' | 'planned' | 'estimated'
   defaultToNull?: boolean
+}
+
+// Типы для React Router Future Flags
+declare module 'react-router-dom' {
+  interface BrowserRouterProps {
+    future?: {
+      v7_startTransition?: boolean
+      v7_relativeSplatPath?: boolean
+    }
+  }
+}
+
+// Расширения для мебельной фабрики WASSER
+declare global {
+  interface Material {
+    id: string
+    name: string
+    price: number
+    category: string
+  }
+  
+  interface FurnitureProduct {
+    id: string
+    name: string
+    materials: Material[]
+    basePrice: number
+    markup?: number
+  }
+  
+  interface PriceList {
+    id: string
+    name: string
+    products: FurnitureProduct[]
+    createdAt: Date
+    version: string
+  }
 }
