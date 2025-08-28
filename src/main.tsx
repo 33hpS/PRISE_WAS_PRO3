@@ -1,10 +1,11 @@
 /**
  * Main application entry point
- * ИСПРАВЛЕНО: добавлен явный импорт React для классического JSX transform
+ * ИСПРАВЛЕНО: добавлен импорт CSS файла для загрузки стилей
  */
 import React, { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import App from './App'
+import './shadcn.css' // ВАЖНО: Импорт CSS файла с Tailwind директивами
 
 /**
  * Initialize React application when DOM is ready
@@ -14,7 +15,7 @@ function initializeApp() {
 
   if (!rootElement) {
     console.error(
-      'Root element not found! Make sure there is an element with id="root" in your HTML.'
+      'Root element not found! Make sure there is an element with id="root" in your HTML.',
     )
     return
   }
@@ -30,7 +31,7 @@ function initializeApp() {
     root.render(
       <StrictMode>
         <App />
-      </StrictMode>
+      </StrictMode>,
     )
 
     console.log('✅ React application initialized successfully')
