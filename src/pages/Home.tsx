@@ -1,124 +1,217 @@
-import React from 'react'
-import { Button } from '../components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card'
-import { Package, FileText, Users, TrendingUp } from 'lucide-react'
+// src/pages/Home.tsx
+// Главная страница WASSER с интеграцией функциональных компонентов
+// Типобезопасная архитектура с производительностью и модульностью
 
-const Home = () => {
-  const stats = [
-    {
-      title: 'Товары',
-      value: '248',
-      description: 'Активных позиций',
-      icon: Package,
-      trend: '+12%'
+import React, { useEffect, useMemo } from 'react';
+import { Dashboard } from '../components/dashboard/Dashboard';
+import { useDashboard } from '../hooks/useDashboard';
+import { FurnitureItemProps, ActivityItem } from '../types/furniture';
+
+/**
+ * Тестовые данные для демонстрации функциональности
+ * В реальном приложении данные будут загружаться из API
+ */
+const mockFurnitureData: FurnitureItemProps[] = [
+  {
+    id: '1',
+    article: 'TBL-001',
+    name: 'Стол обеденный "Классик"',
+    collection: 'Premium',
+    category: 'столы',
+    basePrice: 30000,
+    materials: ['Дуб массив', 'Лак матовый', 'Фурнитура металл'],
+    dimensions: {
+      width: 180,
+      height: 75,
+      depth: 90
     },
-    {
-      title: 'Прайс-листы',
-      value: '12',
-      description: 'Сгенерировано за месяц',
-      icon: FileText,
-      trend: '+8%'
+    isActive: true,
+    createdAt: new Date('2024-01-10'),
+    updatedAt: new Date('2024-01-15')
+  },
+  {
+    id: '2',
+    article: 'WRD-002', 
+    name: 'Шкаф-купе "Модерн"',
+    collection: 'Comfort',
+    category: 'шкафы',
+    basePrice: 68000,
+    materials: ['ЛДСП', 'Зеркало', 'Направляющие soft-close'],
+    dimensions: {
+      width: 220,
+      height: 240,
+      depth: 60
     },
-    {
-      title: 'Клиенты',
-      value: '64',
-      description: 'Активных партнеров',
-      icon: Users,
-      trend: '+23%'
+    isActive: true,
+    createdAt: new Date('2024-01-08'),
+    updatedAt: new Date('2024-01-12')
+  },
+  {
+    id: '3',
+    article: 'BED-003',
+    name: 'Кровать двуспальная "Люкс"',
+    collection: 'Luxury',
+    category: 'кровати',
+    basePrice: 53000,
+    materials: ['Бук массив', 'Ткань велюр', 'Подъемный механизм'],
+    dimensions: {
+      width: 200,
+      height: 110,
+      depth: 220
     },
-    {
-      title: 'Продажи',
-      value: '₽2.4М',
-      description: 'За текущий месяц',
-      icon: TrendingUp,
-      trend: '+18%'
+    isActive: true,
+    createdAt: new Date('2024-01-05'),
+    updatedAt: new Date('2024-01-10')
+  },
+  {
+    id: '4',
+    article: 'COM-004',
+    name: 'Комод "Минимал"',
+    collection: 'Basic',
+    category: 'комоды',
+    basePrice: 28000,
+    materials: ['МДФ', 'Краска белая', 'Ручки хром'],
+    dimensions: {
+      width: 120,
+      height: 80,
+      depth: 45
+    },
+    isActive: true,
+    createdAt: new Date('2024-01-03'),
+    updatedAt: new Date('2024-01-08')
+  }
+];
+
+/**
+ * Тестовые данные активности
+ */
+const mockActivityData: ActivityItem[] = [
+  {
+    id: 'activity-1',
+    type: 'created_pricelist',
+    description: 'Создан прайс-лист',
+    user: 'Админ',
+    userRole: 'Админ',
+    timestamp: new Date(Date.now() - 2 * 60 * 1000) // 2 мин назад
+  },
+  {
+    id: 'activity-2',
+    type: 'updated_product',
+    description: 'Обновлен товар',
+    user: 'Менеджер',
+    userRole: 'Менеджер',
+    timestamp: new Date(Date.now() - 15 * 60 * 1000) // 15 мин назад
+  },
+  {
+    id: 'activity-3',
+    type: 'added_material',
+    description: 'Добавлен материал',
+    user: 'Админ',
+    userRole: 'Админ',
+    timestamp: new Date(Date.now() - 60 * 60 * 1000) // 1 час назад
+  },
+  {
+    id: 'activity-4',
+    type: 'exported_pdf',
+    description: 'Экспорт в PDF',
+    user: 'Менеджер',
+    userRole: 'Менеджер',
+    timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000) // 2 часа назад
+  }
+];
+
+/**
+ * Главный компонент страницы Home
+ */
+const Home: React.FC = () => {
+  const {
+    dashboardData,
+    selectedProducts,
+    createPriceList,
+    selectProduct,
+    addActivity
+  } = useDashboard(mockFurnitureData);
+
+  // Инициализация тестовых данных активности
+  useEffect(() => {
+    mockActivityData.forEach(activity => {
+      addActivity({
+        type: activity.type,
+        description: activity.description,
+        user: activity.user,
+        userRole: activity.userRole
+      });
+    });
+  }, [addActivity]);
+
+  // Мемоизированный обработчик создания прайс-листа
+  const handleCreatePriceList = React.useCallback(() => {
+    if (selectedProducts.length === 0) {
+      // В реальном приложении показали бы уведомление
+      alert('Выберите товары для создания прайс-листа');
+      return;
     }
-  ]
+    
+    createPriceList();
+    
+    // Добавляем уведомление об успешном создании
+    addActivity({
+      type: 'created_pricelist',
+      description: `Создан прайс-лист для ${selectedProducts.length} товаров`,
+      user: 'Текущий пользователь',
+      userRole: 'Админ'
+    });
+  }, [selectedProducts, createPriceList, addActivity]);
+
+  // Мемоизированный обработчик выбора товара
+  const handleProductSelect = React.useCallback((product: FurnitureItemProps) => {
+    selectProduct(product);
+  }, [selectProduct]);
+
+  // Мемоизированный массив ID выбранных товаров
+  const selectedProductIds = useMemo(() => 
+    selectedProducts.map(p => p.id),
+    [selectedProducts]
+  );
 
   return (
-    <div className="flex-1 space-y-4 p-8 pt-6">
-      <div className="flex items-center justify-between space-y-2">
-        <h2 className="text-3xl font-bold tracking-tight">Панель управления</h2>
-        <div className="flex items-center space-x-2">
-          <Button>Создать прайс-лист</Button>
-        </div>
+    <div className="min-h-screen bg-background">
+      {/* Контейнер дашборда */}
+      <div className="container mx-auto px-4 py-8">
+        <Dashboard
+          data={dashboardData}
+          onCreatePriceList={handleCreatePriceList}
+          onProductSelect={handleProductSelect}
+          selectedProducts={selectedProductIds}
+        />
       </div>
       
-      {/* Статистика */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {stats.map((stat, index) => (
-          <Card key={index}>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">{stat.title}</CardTitle>
-              <stat.icon className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stat.value}</div>
-              <p className="text-xs text-muted-foreground">{stat.description}</p>
-              <p className="text-xs text-green-500 mt-1">{stat.trend} с прошлого месяца</p>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      {/* Последние действия */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
-        <Card className="col-span-4">
-          <CardHeader>
-            <CardTitle>Последние товары</CardTitle>
-            <CardDescription>
-              Недавно добавленные или обновленные товары
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {[
-                { name: 'Стол обеденный "Классик"', collection: 'Premium', price: '45,000 ₽' },
-                { name: 'Шкаф-купе "Модерн"', collection: 'Comfort', price: '82,000 ₽' },
-                { name: 'Кровать двуспальная "Люкс"', collection: 'Premium', price: '95,000 ₽' },
-                { name: 'Комод "Минимал"', collection: 'Basic', price: '28,000 ₽' }
-              ].map((item, i) => (
-                <div key={i} className="flex items-center justify-between">
-                  <div>
-                    <p className="font-medium">{item.name}</p>
-                    <p className="text-sm text-muted-foreground">Коллекция: {item.collection}</p>
-                  </div>
-                  <div className="font-bold">{item.price}</div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card className="col-span-3">
-          <CardHeader>
-            <CardTitle>Активность</CardTitle>
-            <CardDescription>
-              История последних действий в системе
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {[
-                { action: 'Создан прайс-лист', user: 'Админ', time: '2 мин назад' },
-                { action: 'Обновлен товар', user: 'Менеджер', time: '15 мин назад' },
-                { action: 'Добавлен материал', user: 'Админ', time: '1 час назад' },
-                { action: 'Экспорт в PDF', user: 'Менеджер', time: '2 часа назад' }
-              ].map((activity, i) => (
-                <div key={i} className="flex items-center justify-between text-sm">
-                  <div>
-                    <p className="font-medium">{activity.action}</p>
-                    <p className="text-muted-foreground">{activity.user}</p>
-                  </div>
-                  <p className="text-muted-foreground">{activity.time}</p>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+      {/* Информация о выбранных товарах (опционально) */}
+      {selectedProducts.length > 0 && (
+        <div className="fixed bottom-4 right-4 bg-card border border-border rounded-lg shadow-lg p-4 max-w-sm">
+          <h3 className="font-semibold mb-2">Выбранные товары</h3>
+          <div className="space-y-1">
+            {selectedProducts.slice(0, 3).map(product => (
+              <div key={product.id} className="text-sm text-muted-foreground">
+                {product.name}
+              </div>
+            ))}
+            {selectedProducts.length > 3 && (
+              <div className="text-sm text-muted-foreground">
+                +{selectedProducts.length - 3} ещё
+              </div>
+            )}
+          </div>
+          <button
+            onClick={handleCreatePriceList}
+            className="mt-3 w-full bg-primary text-primary-foreground px-3 py-2 rounded text-sm font-medium hover:bg-primary/90 transition-colors"
+          >
+            Создать прайс-лист ({selectedProducts.length})
+          </button>
+        </div>
+      )}
     </div>
-  )
-}
+  );
+};
 
-export default Home
+export default Home;

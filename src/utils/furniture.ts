@@ -1,178 +1,121 @@
-/**
- * @file utils/furniture.ts
- * @description Функциональные утилиты для мебельной фабрики с мемоизацией
- */
+// src/types/furniture.ts
+// Типобезопасные интерфейсы мебельной фабрики WASSER
+// Функциональная архитектура с readonly модификаторами
 
-import { 
-  FurnitureMaterial, 
-  FurnitureCollection, 
-  PriceCalculationResult,
-  COLLECTION_MULTIPLIERS,
-  CollectionName
-} from '../types'
+export type FurnitureCollection = 'Premium' | 'Comfort' | 'Basic' | 'Luxury';
+export type FurnitureCategory = 'столы' | 'стулья' | 'шкафы' | 'кровати' | 'комоды';
+export type UserRole = 'Админ' | 'Менеджер';
 
-// ===========================
-// 🧮 ЧИСТЫЕ ФУНКЦИИ РАСЧЕТА
-// ===========================
-
-/**
- * Типобезопасная функция получения множителя коллекции
- * Использует константы с проверкой типов
- */
-export const getCollectionMultiplier = (collection: string): number => {
-  const normalizedCollection = collection.toLowerCase() as CollectionName
-  return COLLECTION_MULTIPLIERS[normalizedCollection] ?? 1.0
+// Основной интерфейс товара мебели
+export interface FurnitureItemProps {
+  readonly id: string;
+  readonly article: string;
+  readonly name: string;
+  readonly collection: FurnitureCollection;
+  readonly category: FurnitureCategory;
+  readonly basePrice: number;
+  readonly materials: readonly string[];
+  readonly dimensions?: {
+    readonly width: number;
+    readonly height: number;
+    readonly depth: number;
+  };
+  readonly isActive: boolean;
+  readonly createdAt: Date;
+  readonly updatedAt: Date;
 }
 
-/**
- * Функция расчета стоимости материалов с коэффициентами потребления
- * Иммутабельная функция без побочных эффектов
- */
-export const calculateMaterialsCost = (
-  materials: readonly FurnitureMaterial[],
-  quantities: Record<string, number>
-): number => {
-  return materials.reduce((total, material) => {
-    if (!material.isActive) return total
-    
-    const quantity = quantities[material.id] || 0
-    const cost = material.price * quantity * material.consumptionCoeff
-    
-    return total + cost
-  }, 0)
+// Метрики дашборда
+export interface DashboardMetrics {
+  readonly products: {
+    readonly total: number;
+    readonly active: number;
+    readonly trend: number;
+    readonly isPositive: boolean;
+  };
+  readonly priceLists: {
+    readonly generated: number;
+    readonly trend: number;
+    readonly isPositive: boolean;
+  };
+  readonly clients: {
+    readonly active: number;
+    readonly trend: number;
+    readonly isPositive: boolean;
+  };
+  readonly sales: {
+    readonly monthly: number;
+    readonly trend: number;
+    readonly isPositive: boolean;
+  };
 }
 
-/**
- * Полный расчет цены изделия с учетом всех факторов
- * Возвращает детализированный результат
- */
-export const calculateFurniturePrice = (
-  basePrice: number,
-  collection: string,
-  materials: readonly FurnitureMaterial[],
-  quantities: Record<string, number>
-): PriceCalculationResult => {
-  const materialsCost = calculateMaterialsCost(materials, quantities)
-  const collectionMultiplier = getCollectionMultiplier(collection)
-  
-  const subtotal = basePrice + materialsCost
-  const finalPrice = subtotal * collectionMultiplier
-  const markup = finalPrice - subtotal
-  const profitMargin = subtotal > 0 ? (markup / subtotal) * 100 : 0
-  
-  return {
-    basePrice,
-    materialsCost,
-    collectionMultiplier,
-    finalPrice,
-    markup,
-    profitMargin,
-    isRentable: profitMargin >= 20 // Минимальная рентабельность 20%
-  } as const
+// Элемент активности
+export interface ActivityItem {
+  readonly id: string;
+  readonly type: 'created_pricelist' | 'updated_product' | 'added_material' | 'exported_pdf';
+  readonly description: string;
+  readonly user: string;
+  readonly userRole: UserRole;
+  readonly timestamp: Date;
+  readonly relatedItemId?: string;
 }
 
-/**
- * Функция форматирования цены для отображения
- */
-export const formatPrice = (price: number): string => {
-  return new Intl.NumberFormat('ru-RU', {
-    style: 'currency',
-    currency: 'RUB',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0
-  }).format(price)
+// Прайс-лист конфигурация
+export interface PriceListConfig {
+  readonly currency: 'RUB' | 'USD' | 'EUR';
+  readonly includeImages: boolean;
+  readonly groupBy: 'collection' | 'category' | 'none';
+  readonly showMaterials: boolean;
+  readonly showDimensions: boolean;
+  readonly title: string;
+  readonly companyInfo: {
+    readonly name: string;
+    readonly address: string;
+    readonly phone: string;
+    readonly email: string;
+  };
 }
 
-/**
- * Функция фильтрации активных материалов
- */
-export const getActiveMaterials = (
-  materials: readonly FurnitureMaterial[]
-): readonly FurnitureMaterial[] => {
-  return materials.filter(material => material.isActive)
+// Элемент прайс-листа с расчетами
+export interface PriceListItem {
+  readonly product: FurnitureItemProps;
+  readonly calculatedPrice: number;
+  readonly collectionMultiplier: number;
+  readonly formattedPrice: string;
 }
 
-/**
- * Группировка материалов по категориям
- */
-export const groupMaterialsByCategory = (
-  materials: readonly FurnitureMaterial[]
-): Record<string, readonly FurnitureMaterial[]> => {
-  return materials.reduce((groups, material) => {
-    const category = material.category
-    return {
-      ...groups,
-      [category]: [...(groups[category] || []), material]
-    }
-  }, {} as Record<string, readonly FurnitureMaterial[]>)
+// Данные дашборда
+export interface DashboardData {
+  readonly metrics: DashboardMetrics;
+  readonly recentProducts: readonly FurnitureItemProps[];
+  readonly recentActivity: readonly ActivityItem[];
+  readonly totalValue: number;
+  readonly averagePrice: number;
+  readonly collectionsCount: number;
 }
 
-/**
- * Валидация данных изделия
- */
-export const validateFurnitureProduct = (product: {
-  article: string
-  name: string
-  basePrice: number
-}): { isValid: boolean; errors: readonly string[] } => {
-  const errors: string[] = []
-  
-  if (!product.article?.trim()) {
-    errors.push('Артикул обязателен')
-  }
-  
-  if (!product.name?.trim()) {
-    errors.push('Название обязательно')
-  }
-  
-  if (typeof product.basePrice !== 'number' || product.basePrice <= 0) {
-    errors.push('Базовая цена должна быть положительным числом')
-  }
-  
-  return {
-    isValid: errors.length === 0,
-    errors: errors as readonly string[]
-  }
+// Пропсы компонентов
+export interface MetricCardProps {
+  readonly title: string;
+  readonly value: number | string;
+  readonly trend: number;
+  readonly isPositive: boolean;
+  readonly icon: React.ComponentType<{ className?: string }>;
+  readonly formatter?: (value: number) => string;
 }
 
-// ===========================
-// 🎨 ФУНКЦИИ ДЛЯ ГЕНЕРАЦИИ PDF
-// ===========================
+export interface FurnitureListProps {
+  readonly items: readonly FurnitureItemProps[];
+  readonly onItemSelect?: (item: FurnitureItemProps) => void;
+  readonly selectedItems?: readonly string[];
+  readonly showPrices?: boolean;
+  readonly showActions?: boolean;
+}
 
-/**
- * Подготовка данных для прайс-листа
- */
-export const preparePriceListData = (
-  products: readonly any[],
-  materials: readonly FurnitureMaterial[],
-  quantities: Record<string, Record<string, number>>
-) => {
-  return products.map(product => {
-    const productQuantities = quantities[product.id] || {}
-    const calculation = calculateFurniturePrice(
-      product.basePrice,
-      product.collection,
-      materials,
-      productQuantities
-    )
-    
-    return {
-      article: product.article,
-      name: product.name,
-      collection: product.collection,
-      basePrice: product.basePrice,
-      materialsCost: calculation.materialsCost,
-      finalPrice: calculation.finalPrice,
-      markup: calculation.markup,
-      profitMargin: calculation.profitMargin,
-      materials: materials
-        .filter(m => productQuantities[m.id] > 0)
-        .map(m => ({
-          name: m.name,
-          quantity: productQuantities[m.id],
-          cost: m.price * productQuantities[m.id] * m.consumptionCoeff,
-          unit: m.unit
-        }))
-    }
-  })
+export interface ProductCardProps {
+  readonly product: FurnitureItemProps;
+  readonly onSelect?: (product: FurnitureItemProps) => void;
+  readonly isSelected?: boolean;
+  readonly showCalculations?: boolean;
 }
