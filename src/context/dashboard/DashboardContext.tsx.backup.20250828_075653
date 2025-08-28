@@ -1,0 +1,186 @@
+/**
+ * @file context/DashboardContext.tsx
+ * @description React Context для дашборда с типобезопасностью
+ */
+
+import React, { createContext, useContext, useEffect, ReactNode } from 'react'
+import { DashboardState, UserWithRole } from '../types/dashboard/types'
+import { useDashboardState, usePerformanceMetrics } from '../hooks/dashboard/useDashboardState'
+import { useUserPermissions } from '../hooks/dashboard/useUserPermissions'
+import { getCurrentUserWithRole } from '../lib/auth'
+
+// ===========================
+# 🎯 ТИПЫ КОНТЕКСТА
+# ===========================
+
+interface DashboardContextValue {
+  // Состояние
+  readonly state: DashboardState
+  readonly isAdmin: boolean
+  readonly availableTabs: readonly string[]
+
+  // Действия
+  readonly actions: {
+    readonly setLoading: (loading: boolean) => void
+    readonly setUser: (user: UserWithRole | null) => void
+    readonly setActiveTab: (tab: string) => void
+    readonly setStats: (stats: any) => void
+    readonly setError: (error: string | null) => void
+    readonly setStatsLoading: (loading: boolean) => void
+    readonly initializeState: () => void
+  }
+
+  // Права доступа
+  readonly permissions: {
+    readonly hasPermission: (feature: string) => boolean
+    readonly canAccessTab: (tab: string) => boolean
+    readonly diagnostics: any
+  }
+
+  // Метрики производительности
+  readonly metrics: {
+    readonly data: any
+    readonly startTimer: () => number
+    readonly endTimer: (startTime: number, operation: string) => number
+    readonly logMetrics: () => void
+  }
+}
+
+// ===========================
+# 🌐 КОНТЕКСТ И ПРОВАЙДЕР
+# ===========================
+
+const DashboardContext = createContext<DashboardContextValue | null>(null)
+
+interface DashboardProviderProps {
+  readonly children: ReactNode
+}
+
+export const DashboardProvider: React.FC<DashboardProviderProps> = ({ children }) => {
+  // Хуки состояния
+  const { state, actions } = useDashboardState()
+  const permissions = useUserPermissions(state.user)
+  const performanceMetrics = usePerformanceMetrics()
+
+  // Инициализация при монтировании
+  useEffect(() => {
+    const initTimer = performanceMetrics.startTimer()
+    
+    const initializeAsync = async () => {
+      try {
+        // Восстановление состояния из localStorage
+        actions.initializeState()
+
+        // Попытка получить текущего пользователя
+        const user = await getCurrentUserWithRole()
+        if (user) {
+          actions.setUser(user)
+        }
+      } catch (error) {
+        console.error('Ошибка инициализации дашборда:', error)
+        actions.setError('Ошибка инициализации')
+      } finally {
+        performanceMetrics.endTimer(initTimer, 'load')
+      }
+    }
+
+    initializeAsync()
+  }, [actions, performanceMetrics])
+
+  // Логирование изменений в dev режиме
+  useEffect(() => {
+    if (process.env.NODE_ENV === 'development') {
+      console.group('🎯 Dashboard Context Update')
+      console.log('State:', state)
+      console.log('Is Admin:', permissions.isAdmin)
+      console.log('Available Tabs:', permissions.availableTabs.length)
+      console.groupEnd()
+    }
+  }, [state, permissions])
+
+  const contextValue: DashboardContextValue = {
+    state,
+    isAdmin: permissions.isAdmin,
+    availableTabs: permissions.availableTabs,
+    actions,
+    permissions: {
+      hasPermission: permissions.hasPermission,
+      canAccessTab: permissions.canAccessTab,
+      diagnostics: permissions.diagnostics
+    },
+    metrics: {
+      data: performanceMetrics.metrics,
+      startTimer: performanceMetrics.startTimer,
+      endTimer: performanceMetrics.endTimer,
+      logMetrics: performanceMetrics.logMetrics
+    }
+  }
+
+  return (
+    <DashboardContext.Provider value={contextValue}>
+      {children}
+    </DashboardContext.Provider>
+  )
+}
+
+// ===========================
+# 🎣 ХУК ДЛЯ ИСПОЛЬЗОВАНИЯ КОНТЕКСТА
+# ===========================
+
+export const useDashboard = (): DashboardContextValue => {
+  const context = useContext(DashboardContext)
+  
+  if (!context) {
+    throw new Error('useDashboard должен использоваться внутри DashboardProvider')
+  }
+  
+  return context
+}
+
+// ===========================
+# 🎯 HOC ДЛЯ ОБЕРТКИ КОМПОНЕНТОВ
+# ===========================
+
+export function withDashboard<P extends object>(
+  Component: React.ComponentType<P>
+): React.FC<P> {
+  const WrappedComponent = (props: P) => {
+    const dashboard = useDashboard()
+    return <Component {...props} dashboard={dashboard} />
+  }
+  
+  WrappedComponent.displayName = `withDashboard(${Component.displayName || Component.name})`
+  return WrappedComponent
+}
+
+// ===========================
+# 🛡️ КОМПОНЕНТ ЗАЩИТЫ МАРШРУТОВ
+# ===========================
+
+interface RouteGuardProps {
+  readonly children: ReactNode
+  readonly requireAdmin?: boolean
+  readonly requiredPermission?: string
+  readonly fallback?: ReactNode
+}
+
+export const RouteGuard: React.FC<RouteGuardProps> = ({
+  children,
+  requireAdmin = false,
+  requiredPermission,
+  fallback = <div>Нет доступа</div>
+}) => {
+  const { isAdmin, permissions } = useDashboard()
+
+  // Проверка административных прав
+  if (requireAdmin && !isAdmin) {
+    return <>{fallback}</>
+  }
+
+  // Проверка специфичных разрешений
+  if (requiredPermission && !permissions.hasPermission(requiredPermission)) {
+    return <>{fallback}</>
+  }
+
+  return <>{children}</>
+}

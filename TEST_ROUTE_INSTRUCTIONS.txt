@@ -1,0 +1,13 @@
+
+// ===========================
+// 🧪 ТЕСТОВЫЙ РОУТ ДЛЯ ИНТЕГРАЦИИ
+// ===========================
+// Добавить в App.tsx в Routes:
+// <Route path="/test-integration" element={<TestIntegration />} />
+
+/*
+import { TestIntegration } from './components/TestIntegration'
+
+// В компоненте App добавить:
+<Route path="/test-integration" element={<TestIntegration />} />
+*/

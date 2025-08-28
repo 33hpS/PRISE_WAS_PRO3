@@ -1,0 +1,186 @@
+/**
+ * @file hooks/useDashboardState.ts
+ * @description Хук управления состоянием дашборда с оптимизацией
+ */
+
+import { useState, useCallback, useReducer, useMemo } from 'react'
+import { DashboardState, DashboardAction, DashboardTab, DashboardStats } from '../../types/dashboard/types'
+import { DashboardStorage } from '../../services/dashboard/storage'
+
+// ===========================
+# 🎯 НАЧАЛЬНОЕ СОСТОЯНИЕ
+# ===========================
+
+const INITIAL_STATE: DashboardState = {
+  activeTab: 'overview',
+  stats: { materials: 0, products: 0, collections: 0, priceLists: 0 },
+  statsLoading: true,
+  user: null,
+  loading: true,
+  error: null
+} as const
+
+// ===========================
+# 🔄 REDUCER ДЛЯ СОСТОЯНИЯ
+# ===========================
+
+const dashboardReducer = (state: DashboardState, action: DashboardAction): DashboardState => {
+  switch (action.type) {
+    case 'SET_LOADING':
+      return { ...state, loading: action.payload }
+    
+    case 'SET_USER':
+      return { ...state, user: action.payload, loading: false }
+    
+    case 'SET_ACTIVE_TAB':
+      // Сохраняем в localStorage
+      DashboardStorage.setActiveTab(action.payload)
+      return { ...state, activeTab: action.payload }
+    
+    case 'SET_STATS':
+      return { ...state, stats: { ...action.payload, lastUpdated: new Date() } }
+    
+    case 'SET_ERROR':
+      return { ...state, error: action.payload, loading: false }
+    
+    case 'SET_STATS_LOADING':
+      return { ...state, statsLoading: action.payload }
+    
+    default:
+      return state
+  }
+}
+
+// ===========================
+# 🎣 ОСНОВНОЙ ХУК СОСТОЯНИЯ
+# ===========================
+
+export const useDashboardState = () => {
+  const [state, dispatch] = useReducer(dashboardReducer, INITIAL_STATE)
+
+  // Инициализация с восстановлением состояния
+  const initializeState = useCallback(() => {
+    // Восстановить активную вкладку
+    const savedTab = DashboardStorage.getActiveTab()
+    if (savedTab) {
+      dispatch({ type: 'SET_ACTIVE_TAB', payload: savedTab })
+    }
+
+    // Попытка восстановить пользователя
+    const testUser = DashboardStorage.getTestUser()
+    const supabaseUser = DashboardStorage.getSupabaseUser()
+    
+    const user = testUser || supabaseUser
+    if (user) {
+      dispatch({ type: 'SET_USER', payload: user })
+    } else {
+      dispatch({ type: 'SET_LOADING', payload: false })
+    }
+  }, [])
+
+  // Действия
+  const actions = useMemo(() => ({
+    setLoading: (loading: boolean) => dispatch({ type: 'SET_LOADING', payload: loading }),
+    setUser: (user: DashboardState['user']) => dispatch({ type: 'SET_USER', payload: user }),
+    setActiveTab: (tab: DashboardTab) => dispatch({ type: 'SET_ACTIVE_TAB', payload: tab }),
+    setStats: (stats: DashboardStats) => dispatch({ type: 'SET_STATS', payload: stats }),
+    setError: (error: string | null) => dispatch({ type: 'SET_ERROR', payload: error }),
+    setStatsLoading: (loading: boolean) => dispatch({ type: 'SET_STATS_LOADING', payload: loading }),
+    initializeState
+  }), [initializeState])
+
+  return { state, actions }
+}
+
+// ===========================
+# 🎣 ХУК ДЛЯ СТАТИСТИКИ
+# ===========================
+
+export const useDashboardStats = () => {
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  const loadStats = useCallback(async (): Promise<DashboardStats> => {
+    try {
+      setLoading(true)
+      setError(null)
+
+      // Проверить кеш
+      const cached = DashboardStorage.getCachedStats()
+      if (cached && DashboardStorage.isCacheValid(cached)) {
+        setLoading(false)
+        return cached.data
+      }
+
+      // Имитация загрузки статистики
+      await new Promise(resolve => setTimeout(resolve, 1000))
+
+      const stats: DashboardStats = {
+        materials: 1248,
+        products: 342,
+        collections: 28,
+        priceLists: 156,
+        lastUpdated: new Date()
+      }
+
+      // Кеширование результата на 5 минут
+      DashboardStorage.setCachedStats(stats, 300000)
+      
+      setLoading(false)
+      return stats
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Ошибка загрузки статистики'
+      setError(errorMessage)
+      setLoading(false)
+      throw err
+    }
+  }, [])
+
+  const refreshStats = useCallback(() => {
+    return loadStats()
+  }, [loadStats])
+
+  return { loading, error, loadStats, refreshStats }
+}
+
+// ===========================
+# 🎣 ХУК ДЛЯ ПРОИЗВОДИТЕЛЬНОСТИ
+# ===========================
+
+export const usePerformanceMetrics = () => {
+  const [metrics, setMetrics] = useState({
+    loadTime: 0,
+    tabSwitchTime: 0,
+    lastUpdate: new Date(),
+    memoryUsage: 0
+  })
+
+  const startTimer = useCallback(() => {
+    return performance.now()
+  }, [])
+
+  const endTimer = useCallback((startTime: number, operation: string) => {
+    const duration = performance.now() - startTime
+    
+    setMetrics(prev => ({
+      ...prev,
+      [operation === 'load' ? 'loadTime' : 'tabSwitchTime']: duration,
+      lastUpdate: new Date(),
+      memoryUsage: (performance as any).memory?.usedJSHeapSize || 0
+    }))
+
+    console.log(`⚡ ${operation}: ${duration.toFixed(2)}ms`)
+    return duration
+  }, [])
+
+  const logMetrics = useCallback(() => {
+    console.group('📊 Dashboard Performance Metrics')
+    console.log('Load Time:', `${metrics.loadTime.toFixed(2)}ms`)
+    console.log('Tab Switch Time:', `${metrics.tabSwitchTime.toFixed(2)}ms`)
+    console.log('Memory Usage:', `${(metrics.memoryUsage / 1024 / 1024).toFixed(2)}MB`)
+    console.log('Last Update:', metrics.lastUpdate.toISOString())
+    console.groupEnd()
+  }, [metrics])
+
+  return { metrics, startTimer, endTimer, logMetrics }
+}

@@ -1,0 +1,130 @@
+/**
+ * @file config/permissions.ts
+ * @description Конфигурация прав доступа WASSER
+ */
+
+import { PermissionsConfig, UserRole, DashboardTab } from '../types/dashboard/types'
+
+// ===========================
+//🔒 КОНФИГУРАЦИЯ БЕЗОПАСНОСТИ  
+//===========================
+
+/** Администраторские email из переменных окружения */
+const getAdminEmails = (): readonly string[] => {
+  const envEmails = process.env.REACT_APP_ADMIN_EMAILS
+  const fallbackEmails = ['admin@wasser.com', 'sherhan1988hp@gmail.com']
+  
+  if (envEmails) {
+    return envEmails.split(',').map(email => email.trim()).filter(Boolean)
+  }
+  
+  console.warn('⚠️ REACT_APP_ADMIN_EMAILS не установлен, используются fallback emails')
+  return fallbackEmails
+}
+
+/** Иерархия ролей */
+const ROLE_HIERARCHY: Record<UserRole, readonly string[]> = {
+  admin: ['admin', 'manager', 'user'],
+  manager: ['manager', 'user'], 
+  user: ['user']
+} as const
+
+/** Права доступа к вкладкам */
+const TAB_PERMISSIONS: Record<DashboardTab, {
+  readonly adminOnly: boolean
+  readonly requiredRole?: UserRole
+  readonly feature?: string
+}> = {
+  // Пользовательские вкладки
+  overview: { adminOnly: false },
+  generator: { adminOnly: false, feature: 'price_generation' },
+  labels: { adminOnly: false, feature: 'label_generation' },
+  
+  // Административные вкладки
+  upload: { adminOnly: true, requiredRole: 'admin', feature: 'data_import' },
+  materials: { adminOnly: true, requiredRole: 'admin', feature: 'materials_management' },
+  products: { adminOnly: true, requiredRole: 'admin', feature: 'products_management' },
+  collections: { adminOnly: true, requiredRole: 'admin', feature: 'collections_management' },
+  types: { adminOnly: true, requiredRole: 'admin', feature: 'types_management' },
+  paint: { adminOnly: true, requiredRole: 'admin', feature: 'paint_recipes' },
+  markup: { adminOnly: true, requiredRole: 'admin', feature: 'markup_rules' },
+  sinks: { adminOnly: true, requiredRole: 'admin', feature: 'sinks_catalog' },
+  sets: { adminOnly: true, requiredRole: 'admin', feature: 'furniture_sets' },
+  history: { adminOnly: true, requiredRole: 'admin', feature: 'change_history' },
+  users: { adminOnly: true, requiredRole: 'admin', feature: 'user_management' }
+} as const
+
+/** Основная конфигурация разрешений */
+export const PERMISSIONS_CONFIG: PermissionsConfig = {
+  adminEmails: getAdminEmails(),
+  roleHierarchy: ROLE_HIERARCHY,
+  tabPermissions: TAB_PERMISSIONS
+} as const
+
+// ===========================
+//🔧 ФУНКЦИИ ПРОВЕРКИ ПРАВ
+//===========================
+
+/**
+ * Проверка административных прав
+ */
+export const isAdminUser = (email: string): boolean => {
+  return PERMISSIONS_CONFIG.adminEmails.includes(email)
+}
+
+/**
+ * Проверка доступа к вкладке
+ */
+export const hasTabAccess = (
+  tab: DashboardTab,
+  userRole: UserRole,
+  userEmail: string
+): boolean => {
+  const permission = TAB_PERMISSIONS[tab]
+  
+  if (!permission.adminOnly) {
+    return true
+  }
+  
+  // Проверка по email для админов
+  if (isAdminUser(userEmail)) {
+    return true
+  }
+  
+  // Проверка по роли
+  if (permission.requiredRole) {
+    const allowedRoles = ROLE_HIERARCHY[userRole] || []
+    return allowedRoles.includes(permission.requiredRole)
+  }
+  
+  return false
+}
+
+/**
+ * Получение доступных вкладок для пользователя
+ */
+export const getAvailableTabs = (
+  userRole: UserRole,
+  userEmail: string
+): readonly DashboardTab[] => {
+  return (Object.keys(TAB_PERMISSIONS) as DashboardTab[])
+    .filter(tab => hasTabAccess(tab, userRole, userEmail))
+}
+
+// ===========================
+//🏭 МЕБЕЛЬНАЯ ФАБРИКА ПРАВА
+//===========================
+
+/** Специфичные права для мебельного производства */
+export const FURNITURE_PERMISSIONS = {
+  MANAGE_MATERIALS: 'manage_materials',
+  MANAGE_COLLECTIONS: 'manage_collections', 
+  GENERATE_PRICELISTS: 'generate_pricelists',
+  MANAGE_PAINT_RECIPES: 'manage_paint_recipes',
+  MANAGE_MARKUP_RULES: 'manage_markup_rules',
+  VIEW_REPORTS: 'view_reports',
+  EXPORT_DATA: 'export_data'
+} as const
+
+export type FurniturePermission = typeof FURNITURE_PERMISSIONS[keyof typeof FURNITURE_PERMISSIONS]
+

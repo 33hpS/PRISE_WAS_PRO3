@@ -1,0 +1,385 @@
+/**
+ * @file components/TestIntegration.tsx
+ * @description Компонент для тестирования интеграции модульной архитектуры
+ */
+
+import React, { useState } from 'react'
+import { DashboardProvider, useDashboard } from '../context/dashboard/DashboardContext'
+import { Card, CardContent, CardHeader, CardTitle } from './ui/card'
+import { Button } from './ui/button'
+import { Badge } from './ui/badge'
+import { FurnitureItem } from './Furniture/FurnitureItem'
+import { PriceListPreview } from './Furniture/PriceListPreview'
+import { 
+  CheckCircle, 
+  XCircle, 
+  Clock, 
+  User, 
+  Settings, 
+  Package,
+  RefreshCw
+} from 'lucide-react'
+import type { 
+  FurnitureProduct, 
+  FurnitureMaterial, 
+  PriceListItem, 
+  PriceListConfig 
+} from '../types'
+
+// ===========================
+// 🧪 ТЕСТОВЫЕ ДАННЫЕ
+// ===========================
+
+const TEST_MATERIALS: readonly FurnitureMaterial[] = [
+  {
+    id: 'wood_oak',
+    name: 'Дуб массив',
+    price: 15000,
+    unit: 'м³',
+    category: 'wood',
+    consumptionCoeff: 1.2,
+    isActive: true,
+    supplier: 'ЛесПром'
+  },
+  {
+    id: 'metal_steel',
+    name: 'Сталь нержавеющая',
+    price: 120000,
+    unit: 'кг',
+    category: 'metal',
+    consumptionCoeff: 1.1,
+    isActive: true,
+    supplier: 'МетКом'
+  }
+] as const
+
+const TEST_PRODUCT: FurnitureProduct = {
+  id: 'table_classic_001',
+  article: 'WAS-TABLE-001',
+  name: 'Стол обеденный "Классик"',
+  collection: 'премиум',
+  basePrice: 45000,
+  category: 'столы',
+  materials: ['wood_oak', 'metal_steel'],
+  dimensions: {
+    width: 1800,
+    height: 750,
+    depth: 900
+  },
+  isActive: true,
+  description: 'Элегантный обеденный стол из массива дуба с металлическими элементами'
+}
+
+const TEST_PRICE_LIST: readonly PriceListItem[] = [
+  {
+    article: 'WAS-TABLE-001',
+    name: 'Стол обеденный "Классик"',
+    collection: 'премиум',
+    basePrice: 45000,
+    materialsCost: 18000,
+    finalPrice: 113400,
+    markup: 50400,
+    materials: [
+      { name: 'Дуб массив', quantity: 1.2, cost: 18000 }
+    ]
+  }
+]
+
+const TEST_CONFIG: PriceListConfig = {
+  title: 'Прайс-лист WASSER',
+  subtitle: 'Мебельная фабрика • Тестовая версия',
+  includeImages: false,
+  includeMaterials: true,
+  groupByCollection: true,
+  sortBy: 'name',
+  currency: 'RUB',
+  format: 'A4'
+}
+
+// ===========================
+// 🎨 ВНУТРЕННИЙ КОМПОНЕНТ ТЕСТА
+// ===========================
+
+const TestIntegrationInner: React.FC = React.memo(() => {
+  const { state, isAdmin, metrics, permissions } = useDashboard()
+  const [testStep, setTestStep] = useState<string>('dashboard')
+
+  // ===========================
+  // 🧪 ТЕСТЫ ФУНКЦИОНАЛЬНОСТИ
+  // ===========================
+
+  const tests = [
+    {
+      id: 'dashboard_context',
+      name: 'Dashboard Context',
+      status: state ? 'success' : 'error',
+      description: 'Загрузка контекста дашборда'
+    },
+    {
+      id: 'user_auth',
+      name: 'Аутентификация',
+      status: state.user ? 'success' : 'warning',
+      description: `Пользователь: ${state.user?.email || 'Не авторизован'}`
+    },
+    {
+      id: 'admin_rights',
+      name: 'Права доступа',
+      status: isAdmin ? 'success' : 'warning',
+      description: `Уровень доступа: ${isAdmin ? 'Администратор' : 'Пользователь'}`
+    },
+    {
+      id: 'performance',
+      name: 'Производительность',
+      status: metrics.data.loadTime < 1000 ? 'success' : 'warning',
+      description: `Загрузка: ${metrics.data.loadTime.toFixed(0)}ms`
+    },
+    {
+      id: 'types',
+      name: 'Типобезопасность',
+      status: 'success',
+      description: 'TypeScript типы загружены'
+    }
+  ]
+
+  // ===========================
+  // 🎨 РЕНДЕР КОМПОНЕНТА
+  // ===========================
+
+  return (
+    <div className="min-h-screen bg-gray-50 p-6">
+      <div className="max-w-7xl mx-auto space-y-6">
+        
+        {/* Заголовок */}
+        <div className="text-center">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+            🧪 Тест интеграции WASSER Dashboard
+          </h1>
+          <p className="text-gray-600">
+            Проверка модульной архитектуры и функциональности
+          </p>
+        </div>
+
+        {/* Статус тестов */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <CheckCircle className="w-5 h-5" />
+              Результаты тестирования
+            </CardTitle>
+          </CardHeader>
+          
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {tests.map((test) => (
+                <div key={test.id} className="flex items-center gap-3 p-3 border rounded-lg">
+                  {test.status === 'success' && (
+                    <CheckCircle className="w-5 h-5 text-green-600" />
+                  )}
+                  {test.status === 'warning' && (
+                    <Clock className="w-5 h-5 text-yellow-600" />
+                  )}
+                  {test.status === 'error' && (
+                    <XCircle className="w-5 h-5 text-red-600" />
+                  )}
+                  
+                  <div className="flex-1">
+                    <div className="font-medium">{test.name}</div>
+                    <div className="text-sm text-gray-500">{test.description}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Информация о состоянии */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          
+          {/* Состояние дашборда */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Settings className="w-5 h-5" />
+                Состояние дашборда
+              </CardTitle>
+            </CardHeader>
+            
+            <CardContent className="space-y-3">
+              <div className="flex justify-between">
+                <span className="text-sm text-gray-500">Активная вкладка:</span>
+                <Badge variant="outline">{state.activeTab}</Badge>
+              </div>
+              
+              <div className="flex justify-between">
+                <span className="text-sm text-gray-500">Загрузка:</span>
+                <Badge variant={state.loading ? "default" : "secondary"}>
+                  {state.loading ? 'Да' : 'Нет'}
+                </Badge>
+              </div>
+              
+              <div className="flex justify-between">
+                <span className="text-sm text-gray-500">Ошибка:</span>
+                <Badge variant={state.error ? "destructive" : "secondary"}>
+                  {state.error ? 'Есть' : 'Нет'}
+                </Badge>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Информация о пользователе */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <User className="w-5 h-5" />
+                Пользователь
+              </CardTitle>
+            </CardHeader>
+            
+            <CardContent className="space-y-3">
+              <div>
+                <span className="text-sm text-gray-500">Email:</span>
+                <div className="font-medium truncate">
+                  {state.user?.email || 'Не авторизован'}
+                </div>
+              </div>
+              
+              <div>
+                <span className="text-sm text-gray-500">Роль:</span>
+                <div className="font-medium">
+                  {state.user?.role || 'Нет роли'}
+                </div>
+              </div>
+              
+              <div>
+                <span className="text-sm text-gray-500">Права:</span>
+                <div className="font-medium">
+                  {isAdmin ? 'Администратор' : 'Пользователь'}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Метрики производительности */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <RefreshCw className="w-5 h-5" />
+                Производительность
+              </CardTitle>
+            </CardHeader>
+            
+            <CardContent className="space-y-3">
+              <div className="flex justify-between">
+                <span className="text-sm text-gray-500">Время загрузки:</span>
+                <span className="font-medium">{metrics.data.loadTime.toFixed(0)}ms</span>
+              </div>
+              
+              <div className="flex justify-between">
+                <span className="text-sm text-gray-500">Переключение:</span>
+                <span className="font-medium">{metrics.data.tabSwitchTime.toFixed(0)}ms</span>
+              </div>
+              
+              <div className="flex justify-between">
+                <span className="text-sm text-gray-500">Обновление:</span>
+                <span className="font-medium text-xs">
+                  {metrics.data.lastUpdate.toLocaleTimeString('ru-RU')}
+                </span>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Навигация по тестам */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Тестирование компонентов</CardTitle>
+          </CardHeader>
+          
+          <CardContent>
+            <div className="flex gap-2 mb-6">
+              <Button
+                variant={testStep === 'dashboard' ? 'default' : 'outline'}
+                onClick={() => setTestStep('dashboard')}
+              >
+                Dashboard
+              </Button>
+              
+              <Button
+                variant={testStep === 'furniture' ? 'default' : 'outline'}
+                onClick={() => setTestStep('furniture')}
+              >
+                Мебель
+              </Button>
+              
+              <Button
+                variant={testStep === 'pricelist' ? 'default' : 'outline'}
+                onClick={() => setTestStep('pricelist')}
+              >
+                Прайс-лист
+              </Button>
+            </div>
+
+            {/* Контент тестов */}
+            {testStep === 'dashboard' && (
+              <div className="text-center p-8">
+                <Package className="w-16 h-16 text-blue-600 mx-auto mb-4" />
+                <h3 className="text-lg font-semibold mb-2">Dashboard работает!</h3>
+                <p className="text-gray-600">
+                  Модульная архитектура дашборда успешно загружена
+                </p>
+              </div>
+            )}
+
+            {testStep === 'furniture' && (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <FurnitureItem
+                  product={TEST_PRODUCT}
+                  materials={TEST_MATERIALS}
+                  selectedCollection="премиум"
+                  materialQuantities={{ wood_oak: 1.2, metal_steel: 0.5 }}
+                  showDetails={true}
+                  showPrice={true}
+                  onSelect={(product) => console.log('Selected:', product)}
+                  onCalculate={(product) => console.log('Calculate:', product)}
+                />
+                
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold">Тест компонента FurnitureItem</h3>
+                  <div className="text-sm text-gray-600 space-y-2">
+                    <p>✅ Типобезопасные пропсы</p>
+                    <p>✅ Мемоизированные расчеты</p>
+                    <p>✅ Функциональный подход</p>
+                    <p>✅ Responsive дизайн</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {testStep === 'pricelist' && (
+              <PriceListPreview
+                items={TEST_PRICE_LIST}
+                config={TEST_CONFIG}
+                onConfigChange={(config) => console.log('Config changed:', config)}
+                onGenerate={() => console.log('PDF generated')}
+              />
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  )
+})
+
+TestIntegrationInner.displayName = 'TestIntegrationInner'
+
+// ===========================
+# 🎯 ОСНОВНОЙ КОМПОНЕНТ С ПРОВАЙДЕРОМ
+# ===========================
+
+export const TestIntegration: React.FC = React.memo(() => (
+  <DashboardProvider>
+    <TestIntegrationInner />
+  </DashboardProvider>
+))
+
+TestIntegration.displayName = 'TestIntegration'

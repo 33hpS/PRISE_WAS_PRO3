@@ -55,15 +55,7 @@
     "clean": "rimraf dist node_modules",
     "commit": "git add . && git commit",
     "push": "git push",
-    "pull": "git pull",
-    "dashboard:type-check": "tsc --noEmit",
-    "dashboard:lint": "eslint src --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
-    "dashboard:clean": "rm -rf dist node_modules/.vite",
-    "dashboard:test": "vitest",
-    "dashboard:preview": "vite preview",
-    "dashboard:dev": "vite --mode development",
-    "dashboard:analyze": "npm run build && npx source-map-explorer 'dist/assets/*.js'",
-    "dashboard:build": "tsc && vite build --mode production"
+    "pull": "git pull"
   },
   "lint-staged": {
     "src/**/*.{ts,tsx}": [
