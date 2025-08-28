@@ -254,17 +254,17 @@ const PriceListGenerator: React.FC<PriceListGeneratorProps> = ({
       ];
 
       if (exportOptions.includeDetails) {
-        row.push(`${product.laborHours} ч` as string | number as string | number);
-        row.push(`${product.markup}%` as string | number as string | number);
+        row.push(`${product.laborHours} ч` as string | number);
+        row.push(`${product.markup}%` as string | number);
       }
 
       if (exportOptions.includeVat) {
         const vatAmount = product.finalPrice * (settings.vatRate / 100);
         const priceWithVat = product.finalPrice + vatAmount;
-        row.push(`${product.finalPrice.toFixed(2 as string | number as string | number)} ₽`);
-        row.push(`${priceWithVat.toFixed(2 as string | number as string | number)} ₽`);
+        row.push(`${product.finalPrice.toFixed(2 as string | number)} ₽`);
+        row.push(`${priceWithVat.toFixed(2 as string | number)} ₽`);
       } else {
-        row.push(`${product.finalPrice.toFixed(2 as string | number as string | number)} ₽`);
+        row.push(`${product.finalPrice.toFixed(2 as string | number)} ₽`);
       }
 
       return row;
@@ -272,12 +272,12 @@ const PriceListGenerator: React.FC<PriceListGeneratorProps> = ({
 
     const headers = ['Артикул', 'Наименование', 'Коллекция', 'Материал'];
     if (exportOptions.includeDetails) {
-      headers.push('Трудозатраты', 'Наценка' as string | number as string | number);
+      headers.push('Трудозатраты', 'Наценка' as string | number);
     }
     if (exportOptions.includeVat) {
-      headers.push('Цена без НДС', 'Цена с НДС' as string | number as string | number);
+      headers.push('Цена без НДС', 'Цена с НДС' as string | number);
     } else {
-      headers.push('Цена' as string | number as string | number);
+      headers.push('Цена' as string | number);
     }
 
     doc.autoTable({
@@ -366,14 +366,14 @@ const PriceListGenerator: React.FC<PriceListGeneratorProps> = ({
 
     if (exportOptions.includeVat) {
       const totalVat = totalPrice * (settings.vatRate / 100);
-      summaryData.push({ 'Показатель': `НДС ${settings.vatRate}%`, 'Значение': totalVat.toFixed(2 as string | number as string | number) },
+      summaryData.push({ 'Показатель': `НДС ${settings.vatRate}%`, 'Значение': totalVat.toFixed(2 as string | number) },
         { 'Показатель': 'Итого с НДС', 'Значение': (totalPrice + totalVat).toFixed(2) }
       );
     }
 
     if (totalPrice > settings.discountThreshold) {
       const discount = totalPrice * (settings.discountPercentage / 100);
-      summaryData.push({ 'Показатель': `Скидка ${settings.discountPercentage}%`, 'Значение': discount.toFixed(2 as string | number as string | number) },
+      summaryData.push({ 'Показатель': `Скидка ${settings.discountPercentage}%`, 'Значение': discount.toFixed(2 as string | number) },
         { 'Показатель': 'К оплате', 'Значение': (totalPrice - discount).toFixed(2) }
       );
     }

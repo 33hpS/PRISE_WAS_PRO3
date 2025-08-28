@@ -588,18 +588,18 @@ function renderModernPages(pdf: PdfData): JSX.Element[] {
           <table className='data-table'>
             <thead>
               <tr>
-                {cols.includes('index') && <th style={{width: "6%"}}>№</th>}
-                {cols.includes('article') && <th style={{width: "10%"}}>Артикул</th>}
-                {cols.includes('name') && <th style={{width: "22%"}}>Наименование</th>}
-                {cols.includes('collection') && <th style={{width: "12%"}}>Коллекция</th>}
-                {cols.includes('type') && <th style={{width: "8%"}}>Вид</th>}
-                {cols.includes('dimensions') && <th style={{width: "12%"}}>Габариты</th>}
-                {cols.includes('material') && <th style={{width: "12%"}}>Материал</th>}
-                {cols.includes('color') && <th style={{width: "10%"}}>Цвет</th>}
-                {cols.includes('description') && <th style={{width: "16%"}}>Описание</th>}
-                {cols.includes('cost') && <th style={{width: "10%"}}>Себестоимость</th>}
-                {cols.includes('markup') && <th style={{width: "10%"}}>Наценка</th>}
-                {cols.includes('price') && <th style={{width: "10%"}}>Цена (KGS)</th>}
+                {cols.includes('index') && <th width='6%'>№</th>}
+                {cols.includes('article') && <th width='10%'>Артикул</th>}
+                {cols.includes('name') && <th width='22%'>Наименование</th>}
+                {cols.includes('collection') && <th width='12%'>Коллекция</th>}
+                {cols.includes('type') && <th width='8%'>Вид</th>}
+                {cols.includes('dimensions') && <th width='12%'>Габариты</th>}
+                {cols.includes('material') && <th width='12%'>Материал</th>}
+                {cols.includes('color') && <th width='10%'>Цвет</th>}
+                {cols.includes('description') && <th width='16%'>Описание</th>}
+                {cols.includes('cost') && <th width='10%'>Себестоимость</th>}
+                {cols.includes('markup') && <th width='10%'>Наценка</th>}
+                {cols.includes('price') && <th width='10%'>Цена (KGS)</th>}
               </tr>
             </thead>
             <tbody>
@@ -761,13 +761,13 @@ function renderNordicPages(data: PdfData): JSX.Element[] {
         <table className='product-table'>
           <thead>
             <tr>
-              {cols.includes('article') && <th style={{width: "12%"}}>Артикул</th>}
-              {cols.includes('name') && <th style={{width: "30%"}}>Наименование</th>}
-              {cols.includes('image') && <th style={{width: "10%"}}>Фото</th>}
-              {cols.includes('dimensions') && <th style={{width: "16%"}}>Размеры</th>}
-              {cols.includes('material') && <th style={{width: "14%"}}>Материал</th>}
-              {cols.includes('color') && <th style={{width: "10%"}}>Цвет</th>}
-              {cols.includes('price') && <th style={{width: "12%"}}>Цена</th>}
+              {cols.includes('article') && <th width='12%'>Артикул</th>}
+              {cols.includes('name') && <th width='30%'>Наименование</th>}
+              {cols.includes('image') && <th width='10%'>Фото</th>}
+              {cols.includes('dimensions') && <th width='16%'>Размеры</th>}
+              {cols.includes('material') && <th width='14%'>Материал</th>}
+              {cols.includes('color') && <th width='10%'>Цвет</th>}
+              {cols.includes('price') && <th width='12%'>Цена</th>}
             </tr>
           </thead>
           <tbody>
@@ -899,13 +899,13 @@ function renderExecutivePages(data: PdfData): JSX.Element[] {
       <table className='product-table'>
         <thead>
           <tr>
-            {cols.includes('article') && <th style={{width: "12%"}}>Артикул</th>}
-            {cols.includes('name') && <th style={{width: "25%"}}>Наименование</th>}
-            {cols.includes('image') && <th style={{width: "12%"}}>Фото</th>}
-            {cols.includes('dimensions') && <th style={{width: "18%"}}>Размеры (мм)</th>}
-            {cols.includes('material') && <th style={{width: "13%"}}>Материал</th>}
-            {cols.includes('color') && <th style={{width: "10%"}}>Цвет</th>}
-            {cols.includes('price') && <th style={{width: "10%"}}>Цена (KGS)</th>}
+            {cols.includes('article') && <th width='12%'>Артикул</th>}
+            {cols.includes('name') && <th width='25%'>Наименование</th>}
+            {cols.includes('image') && <th width='12%'>Фото</th>}
+            {cols.includes('dimensions') && <th width='18%'>Размеры (мм)</th>}
+            {cols.includes('material') && <th width='13%'>Материал</th>}
+            {cols.includes('color') && <th width='10%'>Цвет</th>}
+            {cols.includes('price') && <th width='10%'>Цена (KGS)</th>}
           </tr>
         </thead>
         <tbody>

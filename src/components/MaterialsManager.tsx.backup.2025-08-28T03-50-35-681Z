@@ -8,7 +8,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import * as XLSX from 'xlsx';
 
 // Типы данных
-interface MaterialImport {
+interface ParsedMaterialRow {
   name: string;
   article: string;
   unit: string;
@@ -57,8 +57,8 @@ const MaterialsManager: React.FC<MaterialsManagerProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
 
-  // Конвертация MaterialImport в MaterialImport
-  const convertToMaterialImport = useCallback((rows: MaterialImport[]): MaterialImport[] => {
+  // Конвертация ParsedMaterialRow в MaterialImport
+  const convertToMaterialImport = useCallback((rows: ParsedMaterialRow[]): MaterialImport[] => {
     return rows.map(row => ({
       name: row.name,
       article: row.article,
@@ -69,7 +69,7 @@ const MaterialsManager: React.FC<MaterialsManagerProps> = ({
   }, []);
 
   // Парсинг Excel файла
-  const parseExcelFile = useCallback(async (file: File): Promise<MaterialImport[]> => {
+  const parseExcelFile = useCallback(async (file: File): Promise<ParsedMaterialRow[]> => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       
@@ -81,7 +81,7 @@ const MaterialsManager: React.FC<MaterialsManagerProps> = ({
           const worksheet = workbook.Sheets[sheetName];
           const jsonData = XLSX.utils.sheet_to_json<any>(worksheet);
           
-          const parsedRows: MaterialImport[] = jsonData.map((row: any) => ({
+          const parsedRows: ParsedMaterialRow[] = jsonData.map((row: any) => ({
             name: String(row['Наименование'] || row['Name'] || ''),
             article: String(row['Артикул'] || row['Article'] || ''),
             unit: String(row['Единица'] || row['Unit'] || 'шт'),
