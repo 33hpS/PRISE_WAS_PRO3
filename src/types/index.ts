@@ -1,13 +1,14 @@
 /**
  * @file types/index.ts
- * @description Barrel exports для типобезопасной архитектуры мебельной фабрики WASSER
+ * @description Центральная система типов мебельной фабрики WASSER
+ * Функциональная архитектура с типобезопасностью
  */
 
 // ===========================
 // 🏭 ОСНОВНЫЕ ТИПЫ МЕБЕЛЬНОЙ ФАБРИКИ
 // ===========================
 
-/** Материалы для мебели */
+/** Материал для производства мебели */
 export interface FurnitureMaterial {
   readonly id: string
   readonly name: string
@@ -20,7 +21,7 @@ export interface FurnitureMaterial {
   readonly description?: string
 }
 
-/** Коллекции мебели с множителями */
+/** Коллекция мебели с множителем цены */
 export interface FurnitureCollection {
   readonly id: string
   readonly name: string
@@ -49,7 +50,7 @@ export interface FurnitureProduct {
   readonly description?: string
 }
 
-/** Элемент прайс-листа */
+/** Элемент прайс-листа с расчетами */
 export interface PriceListItem {
   readonly article: string
   readonly name: string
@@ -58,32 +59,33 @@ export interface PriceListItem {
   readonly materialsCost: number
   readonly finalPrice: number
   readonly markup: number
+  readonly profitMargin: number
   readonly materials: readonly {
     readonly name: string
     readonly quantity: number
     readonly cost: number
+    readonly unit: string
   }[]
 }
 
-/** Расчет цены изделия */
-export interface PriceCalculation {
-  readonly basePrice: number
-  readonly materialsCost: number
-  readonly collectionMultiplier: number
-  readonly finalPrice: number
-  readonly markup: number
-  readonly profitMargin: number
+/** Пропсы компонента мебели */
+export interface FurnitureItemProps {
+  readonly article: string
+  readonly name: string
+  readonly collection: string
+  readonly price: number
+  readonly materials: readonly string[]
+  readonly dimensions?: {
+    readonly width: number
+    readonly height: number
+    readonly depth: number
+  }
+  readonly onSelect?: (item: FurnitureProduct) => void
+  readonly showCalculations?: boolean
 }
 
 // ===========================
-// 🎯 DASHBOARD ТИПЫ
-// ===========================
-
-// Re-export dashboard types
-export * from './dashboard/types'
-
-// ===========================
-// 🔧 UTILITY TYPES
+// 🎯 ФУНКЦИОНАЛЬНЫЕ ТИПЫ
 // ===========================
 
 /** Функция расчета множителя коллекции */
@@ -95,24 +97,97 @@ export type MaterialsCostFunction = (
   quantities: Record<string, number>
 ) => number
 
-/** Конфигурация прайс-листа */
-export interface PriceListConfig {
-  readonly title: string
-  readonly subtitle?: string
-  readonly includeImages: boolean
-  readonly includeMaterials: boolean
-  readonly groupByCollection: boolean
-  readonly sortBy: 'article' | 'name' | 'price' | 'collection'
-  readonly currency: 'RUB' | 'USD' | 'EUR'
-  readonly format: 'A4' | 'A3' | 'Letter'
+/** Функция генерации прайс-листа */
+export type PriceListGeneratorFunction = (
+  items: readonly PriceListItem[]
+) => Promise<void>
+
+/** Результат расчета цены */
+export interface PriceCalculationResult {
+  readonly basePrice: number
+  readonly materialsCost: number
+  readonly collectionMultiplier: number
+  readonly finalPrice: number
+  readonly markup: number
+  readonly profitMargin: number
+  readonly isRentable: boolean
 }
 
-/** Результат генерации PDF */
-export interface PDFGenerationResult {
-  readonly success: boolean
-  readonly filename: string
-  readonly itemsCount: number
-  readonly fileSize: number
-  readonly generationTime: number
-  readonly error?: string
+// ===========================
+// 🎮 DASHBOARD ТИПЫ
+// ===========================
+
+export type DashboardTab = 
+  | 'overview' 
+  | 'generator' 
+  | 'materials' 
+  | 'products' 
+  | 'collections'
+  | 'reports'
+
+export interface UserWithRole {
+  readonly id: string
+  readonly email: string
+  readonly role: 'admin' | 'manager' | 'user'
+  readonly name?: string
+  readonly permissions?: readonly string[]
 }
+
+export interface DashboardState {
+  readonly activeTab: DashboardTab
+  readonly user: UserWithRole | null
+  readonly loading: boolean
+  readonly error: string | null
+}
+
+// ===========================
+// 🔧 UTILITY TYPES
+// ===========================
+
+/** Создание только для чтения */
+export type ReadonlyDeep<T> = {
+  readonly [P in keyof T]: T[P] extends object ? ReadonlyDeep<T[P]> : T[P]
+}
+
+/** Обязательные поля */
+export type RequiredFields<T, K extends keyof T> = T & Required<Pick<T, K>>
+
+/** Опциональные поля */
+export type OptionalFields<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>
+
+// ===========================
+// 🏭 КОНСТАНТЫ МЕБЕЛЬНОЙ ФАБРИКИ
+// ===========================
+
+/** Множители коллекций мебели */
+export const COLLECTION_MULTIPLIERS = {
+  'премиум': 1.8,
+  'люкс': 1.5,
+  'стандарт': 1.2,
+  'эконом': 1.0,
+  'базовый': 0.9
+} as const
+
+/** Категории материалов */
+export const MATERIAL_CATEGORIES = {
+  wood: 'Древесина',
+  metal: 'Металл', 
+  fabric: 'Ткань',
+  hardware: 'Фурнитура',
+  finish: 'Отделка',
+  glass: 'Стекло'
+} as const
+
+/** Типы мебели */
+export const FURNITURE_TYPES = {
+  столы: 'Столы',
+  стулья: 'Стулья',
+  шкафы: 'Шкафы',
+  кровати: 'Кровати',
+  комоды: 'Комоды',
+  другое: 'Другое'
+} as const
+
+export type MaterialCategory = keyof typeof MATERIAL_CATEGORIES
+export type FurnitureType = keyof typeof FURNITURE_TYPES
+export type CollectionName = keyof typeof COLLECTION_MULTIPLIERS
