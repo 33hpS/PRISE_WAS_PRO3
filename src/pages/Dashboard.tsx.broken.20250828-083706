@@ -1,0 +1,178 @@
+import React, { useState, useMemo, useCallback, Suspense, lazy } from 'react'
+import { useNavigate } from 'react-router-dom'
+import {
+  Package, FileText, Database, Gauge, Upload, Home, LogOut, Loader2
+} from 'lucide-react'
+import { useAuthContext } from '../contexts/AuthContext'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card'
+import { Button } from '../components/ui/button'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs'
+
+const PriceListGenerator = lazy(() => 
+  import('../components/PriceListGenerator').catch(() => ({
+    default: () => <div className="p-8 text-center text-gray-500">Генератор прайс-листов недоступен</div>
+  }))
+)
+
+const MaterialsManager = lazy(() => 
+  import('../components/MaterialsManager').catch(() => ({
+    default: () => <div className="p-8 text-center text-gray-500">Управление материалами недоступно</div>
+  }))
+)
+
+const ComponentLoader = () => (
+  <div className="flex items-center justify-center p-8">
+    <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
+    <span className="ml-2">Загрузка...</span>
+  </div>
+)
+
+const OverviewContent = () => {
+  const stats = useMemo(() => ({
+    materials: 1248, // ДСП, МДФ, фурнитура
+    products: 342,   // Столы, шкафы, кухни  
+    collections: 28, // Модерн, Классик, Лофт
+    priceLists: 156  // Сгенерированные PDF
+  }), [])
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-2xl font-bold text-gray-900">Панель управления WASSER</h2>
+        <p className="text-gray-600">Система управления мебельной фабрикой</p>
+      </div>
+      
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Материалы</CardTitle>
+            <Database className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-blue-600">{stats.materials}</div>
+            <p className="text-xs text-muted-foreground">ДСП, МДФ, фурнитура</p>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Изделия</CardTitle>
+            <Package className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-green-600">{stats.products}</div>
+            <p className="text-xs text-muted-foreground">Столы, шкафы, кухни</p>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Коллекции</CardTitle>
+            <Package className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-purple-600">{stats.collections}</div>
+            <p className="text-xs text-muted-foreground">Модерн, Классик, Лофт</p>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Прайс-листы</CardTitle>
+            <FileText className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-orange-600">{stats.priceLists}</div>
+            <p className="text-xs text-muted-foreground">Сгенерированные PDF</p>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  )
+}
+
+const Dashboard = () => {
+  const navigate = useNavigate()
+  const { user, isAdmin, signOut } = useAuthContext()
+  const [activeTab, setActiveTab] = useState('overview')
+
+  const handleSignOut = useCallback(async () => {
+    await signOut()
+    navigate('/')
+  }, [signOut, navigate])
+
+  if (!user) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Card className="w-96">
+          <CardContent className="p-6 text-center">
+            <h2 className="text-xl font-bold mb-2">Требуется авторизация</h2>
+            <Button onClick={() => navigate('/')}>На главную</Button>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <div className="container mx-auto px-4 py-6">
+        <div className="mb-8">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold">WASSER Dashboard</h1>
+              <p className="text-gray-600">
+                Добро пожаловать, {user.email}
+                {isAdmin && (
+                  <span className="ml-2 bg-blue-100 text-blue-800 px-2 py-0.5 rounded text-xs">
+                    Администратор
+                  </span>
+                )}
+              </p>
+            </div>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => navigate('/')}>
+                <Home className="w-4 h-4 mr-2" />Главная
+              </Button>
+              <Button variant="outline" onClick={handleSignOut}>
+                <LogOut className="w-4 h-4 mr-2" />Выйти
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="overview">
+              <Gauge className="w-4 h-4 mr-2" />Обзор
+            </TabsTrigger>
+            <TabsTrigger value="generator">
+              <FileText className="w-4 h-4 mr-2" />Прайс-листы
+            </TabsTrigger>
+            <TabsTrigger value="materials">
+              <Database className="w-4 h-4 mr-2" />Материалы
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="overview">
+            <OverviewContent />
+          </TabsContent>
+          
+          <TabsContent value="generator">
+            <Suspense fallback={<ComponentLoader />}>
+              <PriceListGenerator />
+            </Suspense>
+          </TabsContent>
+          
+          <TabsContent value="materials">
+            <Suspense fallback={<ComponentLoader />}>
+              <MaterialsManager />
+            </Suspense>
+          </TabsContent>
+        </Tabs>
+      </div>
+    </div>
+  )
+}
+
+export default React.memo(Dashboard)

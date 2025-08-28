@@ -6,6 +6,7 @@
   "private": true,
   "scripts": {
     "dev": "vite --host --port 5173",
+    "build": "tsc --noEmit --skipLibCheck && vite build",
     "build:analyze": "npm run build && npx vite-bundle-analyzer dist",
     "build:dev": "vite build --mode development",
     "preview": "vite preview",
@@ -48,6 +49,7 @@
     "type-check:soft": "tsc --noEmit --skipLibCheck --allowJs --strict false",
     "lint:soft": "eslint src --ext ts,tsx --max-warnings 20",
     "build:force": "vite build --force",
+    "lint:fix": "eslint . --fix",
     "format": "prettier --write .",
     "type-check": "tsc --noEmit",
     "clean": "rimraf dist node_modules",
@@ -61,10 +63,7 @@
     "dashboard:preview": "vite preview",
     "dashboard:dev": "vite --mode development",
     "dashboard:analyze": "npm run build && npx source-map-explorer 'dist/assets/*.js'",
-    "dashboard:build": "tsc -p tsconfig.node.json && vite build --mode production",
-    "build": "tsc -p tsconfig.node.json && vite build",
-    "lint:fix": "eslint . --fix",
-    "clean:cache": "rimraf node_modules/.vite dist/.vite"
+    "dashboard:build": "tsc && vite build --mode production"
   },
   "lint-staged": {
     "src/**/*.{ts,tsx}": [

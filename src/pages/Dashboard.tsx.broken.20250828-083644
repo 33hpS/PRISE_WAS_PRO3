@@ -1,0 +1,523 @@
+/**
+ * @file pages/Dashboard.tsx
+ * @description Функциональный дашборд WASSER с модульной архитектурой
+ *
+ * Особенности:
+ * - Чистая функциональная архитектура
+ * - Типобезопасность и производительность
+ * - Обработка ошибок и ленивая загрузка
+ * - Система разрешений и аутентификация
+ */
+
+import React, { Suspense, lazy, memo, useMemo, useCallback, ErrorInfo } from 'react'
+import { useNavigate } from 'react-router'
+import {
+  Package,
+  Settings,
+  Upload,
+  FileText,
+  Database,
+  Users,
+  Eye,
+  Gauge,
+  PaintBucket,
+  Percent,
+  Waves,
+  Boxes,
+  Loader2,
+  AlertCircle,
+} from 'lucide-react'
+
+// UI компоненты
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card'
+import { Button } from '../components/ui/button'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs'
+import { Separator } from '../components/ui/separator'
+import SupabaseStatus from '../components/SupabaseStatus'
+
+// Хуки и утилиты
+import { useAuthContext } from '../contexts/AuthContext'
+
+// ===========================
+// 🎨 ЛЕНИВАЯ ЗАГРУЗКА КОМПОНЕНТОВ
+// ===========================
+
+// Основные компоненты
+const PriceListGenerator = lazy(() => import('../components/PriceListGenerator'))
+
+// Административные компоненты
+const FileUpload = lazy(() => import('../components/FileUpload'))
+const MaterialsManager = lazy(() => import('../components/MaterialsManager'))
+const ProductManager = lazy(() => import('../components/ProductManager'))
+const CollectionsManager = lazy(() => import('../components/CollectionsManager'))
+const ProductTypesManager = lazy(() => import('../components/ProductTypesManager'))
+const UserManagement = lazy(() => import('../components/UserManagement'))
+const TechCardHistory = lazy(() => import('../components/TechCardHistory'))
+
+// Специализированные компоненты
+const PaintRecipesManager = lazy(() => import('../components/PaintRecipesManager'))
+const MarkupRulesManager = lazy(() => import('../components/MarkupRulesManager'))
+const SinksManager = lazy(() => import('../components/SinksManager'))
+const SetsManager = lazy(() => import('../components/SetsManager'))
+
+// ===========================
+// 🎯 ТИПЫ И ИНТЕРФЕЙСЫ
+// ===========================
+
+type DashboardTab =
+  | 'overview'
+  | 'generator'
+  | 'labels'
+  | 'upload'
+  | 'materials'
+  | 'products'
+  | 'collections'
+  | 'types'
+  | 'paint'
+  | 'markup'
+  | 'sinks'
+  | 'sets'
+  | 'history'
+  | 'users'
+
+interface TabDefinition {
+  readonly key: DashboardTab
+  readonly label: string
+  readonly icon: React.ReactNode
+  readonly description: string
+  readonly adminOnly: boolean
+  readonly component: React.ComponentType
+}
+
+interface DashboardStats {
+  readonly materials: number
+  readonly products: number
+  readonly collections: number
+  readonly priceLists: number
+}
+
+// ===========================
+// 🔧 СЛУЖЕБНЫЕ КОМПОНЕНТЫ
+// ===========================
+
+const ComponentLoader: React.FC = memo(() => (
+  <div className="flex items-center justify-center p-8">
+    <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
+    <span className="ml-2 text-gray-600">Загрузка компонента...</span>
+  </div>
+))
+
+ComponentLoader.displayName = 'ComponentLoader'
+
+class DashboardErrorBoundary extends React.Component<
+  { children: React.ReactNode; fallback?: React.ComponentType<{ error: Error }> },
+  { hasError: boolean; error?: Error }
+> {
+  constructor(props: {
+    children: React.ReactNode
+    fallback?: React.ComponentType<{ error: Error }>
+  }) {
+    super(props)
+    this.state = { hasError: false }
+  }
+
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error }
+  }
+
+  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    console.error('🚨 Dashboard Error Boundary:', error, errorInfo)
+  }
+
+  render() {
+    if (this.state.hasError) {
+      const FallbackComponent = this.props.fallback || DefaultErrorFallback
+      return <FallbackComponent error={this.state.error!} />
+    }
+
+    return this.props.children
+  }
+}
+
+const DefaultErrorFallback: React.FC<{ error: Error }> = ({ error }) => (
+  <Card className="border-red-200 bg-red-50">
+    <CardHeader>
+      <CardTitle className="flex items-center gap-2 text-red-600">
+        <AlertCircle className="w-5 h-5" />
+        Ошибка компонента дашборда
+      </CardTitle>
+    </CardHeader>
+    <CardContent>
+      <p className="text-gray-600 mb-4">
+        Произошла ошибка при загрузке компонента. Попробуйте обновить страницу.
+      </p>
+      <details className="text-sm text-gray-500">
+        <summary>Техническая информация</summary>
+        <pre className="mt-2 p-2 bg-gray-100 rounded text-xs overflow-auto">{error.message}</pre>
+      </details>
+      <Button onClick={() => window.location.reload()} variant="outline" size="sm" className="mt-4">
+        Обновить страницу
+      </Button>
+    </CardContent>
+  </Card>
+)
+
+const AccessDenied: React.FC = memo(() => (
+  <Card className="border-yellow-200 bg-yellow-50">
+    <CardHeader>
+      <CardTitle className="text-yellow-600">Нет доступа</CardTitle>
+    </CardHeader>
+    <CardContent>
+      <p className="text-gray-600">
+        У вас нет прав для доступа к этой функции. Обратитесь к администратору.
+      </p>
+    </CardContent>
+  </Card>
+))
+
+AccessDenied.displayName = 'AccessDenied'
+
+// ===========================
+// 🎮 ОБЗОРНЫЙ КОМПОНЕНТ
+// ===========================
+
+const DashboardOverview: React.FC = memo(() => {
+  // Мокированная статистика - в продакшене будет из API
+  const stats: DashboardStats = useMemo(
+    () => ({
+      materials: 1248,
+      products: 342,
+      collections: 28,
+      priceLists: 156,
+    }),
+    [],
+  )
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-2xl font-bold tracking-tight text-gray-900">Обзор системы WASSER</h2>
+        <p className="text-gray-600">Управление каталогом и ценообразованием мебельной фабрики</p>
+      </div>
+
+      {/* Статистика */}
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Материалы</CardTitle>
+            <Database className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats.materials}</div>
+            <p className="text-xs text-muted-foreground">активных позиций</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Товары</CardTitle>
+            <Package className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats.products}</div>
+            <p className="text-xs text-muted-foreground">в каталоге</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Коллекции</CardTitle>
+            <Boxes className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats.collections}</div>
+            <p className="text-xs text-muted-foreground">мебельных коллекций</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Прайс-листы</CardTitle>
+            <FileText className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats.priceLists}</div>
+            <p className="text-xs text-muted-foreground">сгенерировано</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Статус подключения */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Статус системы</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <SupabaseStatus />
+        </CardContent>
+      </Card>
+
+      {/* Быстрые действия */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Быстрые действия</CardTitle>
+          <CardDescription>Часто используемые функции</CardDescription>
+        </CardHeader>
+        <CardContent className="grid gap-4 md:grid-cols-2">
+          <Button variant="outline" className="justify-start">
+            <FileText className="mr-2 h-4 w-4" />
+            Создать прайс-лист
+          </Button>
+          <Button variant="outline" className="justify-start">
+            <Upload className="mr-2 h-4 w-4" />
+            Импорт материалов
+          </Button>
+          <Button variant="outline" className="justify-start">
+            <Package className="mr-2 h-4 w-4" />
+            Добавить товар
+          </Button>
+          <Button variant="outline" className="justify-start">
+            <Settings className="mr-2 h-4 w-4" />
+            Настройки системы
+          </Button>
+        </CardContent>
+      </Card>
+    </div>
+  )
+})
+
+DashboardOverview.displayName = 'DashboardOverview'
+
+// ===========================
+// 🔐 ПРОВЕРКА РАЗРЕШЕНИЙ
+// ===========================
+
+const useUserPermissions = () => {
+  const { user } = useAuthContext()
+
+  const isAdmin = useMemo(() => {
+    if (!user?.email) return false
+
+    const adminEmails = [
+      process.env.VITE_ADMIN_EMAIL_1,
+      process.env.VITE_ADMIN_EMAIL_2,
+      process.env.VITE_ADMIN_EMAIL_3,
+    ].filter(Boolean)
+
+    return adminEmails.includes(user.email)
+  }, [user?.email])
+
+  return { isAdmin, user }
+}
+
+// ===========================
+// 📋 КОНФИГУРАЦИЯ ВКЛАДОК
+// ===========================
+
+const createTabDefinitions = (isAdmin: boolean): readonly TabDefinition[] =>
+  [
+    {
+      key: 'overview',
+      label: 'Обзор',
+      icon: <Gauge className="w-4 h-4" />,
+      description: 'Статистика и быстрые действия',
+      adminOnly: false,
+      component: DashboardOverview,
+    },
+    {
+      key: 'generator',
+      label: 'Прайс-листы',
+      icon: <FileText className="w-4 h-4" />,
+      description: 'Генерация PDF прайс-листов',
+      adminOnly: false,
+      component: PriceListGenerator,
+    },
+    {
+      key: 'upload',
+      label: 'Импорт',
+      icon: <Upload className="w-4 h-4" />,
+      description: 'Загрузка Excel файлов',
+      adminOnly: true,
+      component: FileUpload,
+    },
+    {
+      key: 'materials',
+      label: 'Материалы',
+      icon: <Database className="w-4 h-4" />,
+      description: 'База материалов и цены',
+      adminOnly: false,
+      component: MaterialsManager,
+    },
+    {
+      key: 'products',
+      label: 'Товары',
+      icon: <Package className="w-4 h-4" />,
+      description: 'Каталог изделий',
+      adminOnly: false,
+      component: ProductManager,
+    },
+    {
+      key: 'collections',
+      label: 'Коллекции',
+      icon: <Boxes className="w-4 h-4" />,
+      description: 'Управление коллекциями',
+      adminOnly: true,
+      component: CollectionsManager,
+    },
+    {
+      key: 'types',
+      label: 'Типы товаров',
+      icon: <Settings className="w-4 h-4" />,
+      description: 'Классификация изделий',
+      adminOnly: true,
+      component: ProductTypesManager,
+    },
+    {
+      key: 'paint',
+      label: 'Окраска',
+      icon: <PaintBucket className="w-4 h-4" />,
+      description: 'Рецепты покраски',
+      adminOnly: true,
+      component: PaintRecipesManager,
+    },
+    {
+      key: 'markup',
+      label: 'Наценки',
+      icon: <Percent className="w-4 h-4" />,
+      description: 'Правила ценообразования',
+      adminOnly: true,
+      component: MarkupRulesManager,
+    },
+    {
+      key: 'sinks',
+      label: 'Мойки',
+      icon: <Waves className="w-4 h-4" />,
+      description: 'Каталог моек',
+      adminOnly: true,
+      component: SinksManager,
+    },
+    {
+      key: 'sets',
+      label: 'Комплекты',
+      icon: <Package className="w-4 h-4" />,
+      description: 'Наборы изделий',
+      adminOnly: true,
+      component: SetsManager,
+    },
+    {
+      key: 'history',
+      label: 'История',
+      icon: <Eye className="w-4 h-4" />,
+      description: 'Техкарты и изменения',
+      adminOnly: true,
+      component: TechCardHistory,
+    },
+    {
+      key: 'users',
+      label: 'Пользователи',
+      icon: <Users className="w-4 h-4" />,
+      description: 'Управление доступом',
+      adminOnly: true,
+      component: UserManagement,
+    },
+  ].filter((tab) => !tab.adminOnly || isAdmin)
+
+// ===========================
+// 🏗️ ГЛАВНЫЙ КОМПОНЕНТ ДАШБОРДА
+// ===========================
+
+const Dashboard: React.FC = () => {
+  const navigate = useNavigate()
+  const { isAdmin, user } = useUserPermissions()
+  const [activeTab, setActiveTab] = React.useState<DashboardTab>('overview')
+
+  // Конфигурация вкладок с учетом прав
+  const tabDefinitions = useMemo(() => createTabDefinitions(isAdmin), [isAdmin])
+
+  // Обработчик переключения вкладок
+  const handleTabChange = useCallback((value: string) => {
+    setActiveTab(value as DashboardTab)
+  }, [])
+
+  // Поиск активной вкладки
+  const activeTabConfig = useMemo(
+    () => tabDefinitions.find((tab) => tab.key === activeTab) || tabDefinitions[0],
+    [tabDefinitions, activeTab],
+  )
+
+  // Редирект неавторизованных пользователей
+  React.useEffect(() => {
+    if (!user) {
+      navigate('/')
+      return
+    }
+  }, [user, navigate])
+
+  if (!user) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <ComponentLoader />
+      </div>
+    )
+  }
+
+  return (
+    <DashboardErrorBoundary>
+      <div className="min-h-screen bg-gray-50">
+        <div className="container mx-auto p-6">
+          {/* Шапка */}
+          <div className="mb-8">
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900">WASSER Dashboard</h1>
+                <p className="text-gray-600">
+                  Добро пожаловать, {user.email}
+                  {isAdmin && (
+                    <span className="ml-2 inline-flex items-center rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800">
+                      Администратор
+                    </span>
+                  )}
+                </p>
+              </div>
+              <Button variant="outline" onClick={() => navigate('/')}>
+                На главную
+              </Button>
+            </div>
+            <Separator className="mt-4" />
+          </div>
+
+          {/* Навигация и контент */}
+          <Tabs value={activeTab} onValueChange={handleTabChange}>
+            <TabsList className="grid w-full grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 mb-8">
+              {tabDefinitions.map((tab) => (
+                <TabsTrigger
+                  key={tab.key}
+                  value={tab.key}
+                  className="flex items-center gap-2 text-xs"
+                >
+                  {tab.icon}
+                  <span className="hidden sm:inline">{tab.label}</span>
+                </TabsTrigger>
+              ))}
+            </TabsList>
+
+            {tabDefinitions.map((tab) => (
+              <TabsContent key={tab.key} value={tab.key} className="mt-0">
+                <Suspense fallback={<ComponentLoader />}>
+                  <DashboardErrorBoundary>
+                    <tab.component />
+                  </DashboardErrorBoundary>
+                </Suspense>
+              </TabsContent>
+            ))}
+          </Tabs>
+        </div>
+      </div>
+    </DashboardErrorBoundary>
+  )
+}
+
+Dashboard.displayName = 'Dashboard'
+
+export default memo(Dashboard)
+
