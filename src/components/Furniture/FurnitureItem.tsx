@@ -1,242 +1,136 @@
 /**
- * @file components/Furniture/FurnitureItem.tsx
- * @description Типобезопасный компонент элемента мебели с функциональным подходом
+ * @file components/furniture/FurnitureItem.tsx
+ * @description Компонент мебельного изделия с функциональной архитектурой
+ * 
+ * Основано на userExamples FurnitureItem
+ * React.memo + useMemo для оптимизации производительности
  */
 
 import React, { useMemo } from 'react'
-import { Card, CardContent, CardHeader, CardTitle } from '../ui/card'
-import { Badge } from '../ui/badge'
-import { Button } from '../ui/button'
-import { Package, Ruler, Tag, Calculator } from 'lucide-react'
-import type { FurnitureProduct, FurnitureMaterial } from '../../types'
-import { useFurnitureCalculations } from '../../hooks'
+import type { FurnitureItemProps } from '../../types/furniture'
+import { calculateFurniturePriceMemo, formatPrice } from '../../utils/furniture/pricing'
 
-// ===========================
-// 🎯 ИНТЕРФЕЙСЫ КОМПОНЕНТА
-// ===========================
-
-interface FurnitureItemProps {
-  readonly product: FurnitureProduct
-  readonly materials?: readonly FurnitureMaterial[]
-  readonly selectedCollection?: string
-  readonly materialQuantities?: Record<string, number>
-  readonly onSelect?: (product: FurnitureProduct) => void
-  readonly onCalculate?: (product: FurnitureProduct) => void
+interface FurnitureItemComponentProps {
+  readonly item: FurnitureItemProps
   readonly showDetails?: boolean
-  readonly showPrice?: boolean
+  readonly onEdit?: (item: FurnitureItemProps) => void
+  readonly onDelete?: (id: string) => void
 }
 
-// ===========================
-// 🎨 ОСНОВНОЙ КОМПОНЕНТ
-// ===========================
-
 /**
- * Мемоизированный компонент элемента мебели
- * Функциональный подход с типобезопасностью
+ * Функциональный компонент мебельного изделия (из userExamples)
+ * React.memo для предотвращения лишних рендеров
  */
-export const FurnitureItem: React.FC<FurnitureItemProps> = React.memo(({
-  product,
-  materials = [],
-  selectedCollection = 'стандарт',
-  materialQuantities = {},
-  onSelect,
-  onCalculate,
-  showDetails = true,
-  showPrice = true
+export const FurnitureItem: React.FC<FurnitureItemComponentProps> = React.memo(({ 
+  item,
+  showDetails = false,
+  onEdit,
+  onDelete
 }) => {
-  // ===========================
-  // 🧮 РАСЧЕТЫ С МЕМОИЗАЦИЕЙ
-  // ===========================
+  // useMemo для оптимизации расчета цены (как в userExamples)
+  const calculatedPrice = useMemo(() => {
+    return calculateFurniturePriceMemo(item)
+  }, [item.price, item.collection, item.materials])
 
-  const { priceCalculation, materialsBreakdown, isRentable } = useFurnitureCalculations({
-    materials,
-    collections: [], // Заглушка, в реальном приложении передается из пропсов
-    basePrice: product.basePrice,
-    selectedCollection,
-    materialQuantities
-  })
+  // Мемоизированное форматирование цены
+  const formattedPrice = useMemo(() => {
+    return formatPrice(calculatedPrice.finalPrice)
+  }, [calculatedPrice.finalPrice])
 
-  /** Размеры изделия */
-  const dimensionsText = useMemo(() => {
-    const { width, height, depth } = product.dimensions
-    return `${width} × ${height} × ${depth} мм`
-  }, [product.dimensions])
-
-  /** Категория с иконкой */
-  const categoryInfo = useMemo(() => {
-    const categoryIcons: Record<string, React.ReactNode> = {
-      'столы': <Package className="w-4 h-4" />,
-      'стулья': <Package className="w-4 h-4" />,
-      'шкафы': <Package className="w-4 h-4" />,
-      'кровати': <Package className="w-4 h-4" />,
-      'комоды': <Package className="w-4 h-4" />,
-      'другое': <Package className="w-4 h-4" />
-    }
-
-    return {
-      icon: categoryIcons[product.category] || <Package className="w-4 h-4" />,
-      label: product.category.charAt(0).toUpperCase() + product.category.slice(1)
-    }
-  }, [product.category])
-
-  /** Статус рентабельности */
-  const rentabilityBadge = useMemo(() => {
-    if (!showPrice) return null
-
-    return isRentable ? (
-      <Badge variant="default" className="bg-green-100 text-green-800">
-        Рентабельно
-      </Badge>
-    ) : (
-      <Badge variant="destructive" className="bg-red-100 text-red-800">
-        Убыточно
-      </Badge>
-    )
-  }, [isRentable, showPrice])
-
-  // ===========================
-  // 🎛️ ОБРАБОТЧИКИ СОБЫТИЙ
-  // ===========================
-
-  const handleSelect = () => {
-    onSelect?.(product)
-  }
-
-  const handleCalculate = () => {
-    onCalculate?.(product)
-  }
-
-  // ===========================
-  // 🎨 РЕНДЕР КОМПОНЕНТА
-  // ===========================
+  // Мемоизированное объединение материалов
+  const materialsText = useMemo(() => {
+    return item.materials.join(', ')
+  }, [item.materials])
 
   return (
-    <Card 
-      className={`
-        transition-all duration-200 hover:shadow-md cursor-pointer
-        ${!product.isActive ? 'opacity-60 bg-gray-50' : 'hover:shadow-lg'}
-      `}
-      onClick={handleSelect}
-    >
-      <CardHeader className="pb-3">
-        <div className="flex items-start justify-between">
-          <div className="flex-1">
-            <CardTitle className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-              {categoryInfo.icon}
-              {product.name}
-            </CardTitle>
-            
-            <div className="flex items-center gap-2 mt-1">
-              <Badge variant="outline" className="text-xs">
-                <Tag className="w-3 h-3 mr-1" />
-                {product.article}
-              </Badge>
-              
-              {product.collection && (
-                <Badge variant="secondary" className="text-xs">
-                  {product.collection}
-                </Badge>
-              )}
-              
-              {!product.isActive && (
-                <Badge variant="destructive" className="text-xs">
-                  Неактивно
-                </Badge>
-              )}
-            </div>
-          </div>
-
-          {showPrice && rentabilityBadge}
+    <div className="furniture-item bg-white border border-gray-200 rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow">
+      {/* Основная информация (как в userExamples) */}
+      <div className="flex justify-between items-start mb-3">
+        <div className="flex-1">
+          <h3 className="text-lg font-semibold text-gray-900 mb-1">
+            {item.name}
+          </h3>
+          <p className="text-sm text-gray-600">
+            Артикул: {item.article}
+          </p>
         </div>
-      </CardHeader>
-
-      <CardContent className="space-y-4">
-        {/* Основная информация */}
-        {showDetails && (
-          <div className="grid grid-cols-2 gap-4 text-sm">
-            <div className="flex items-center gap-2 text-gray-600">
-              <Ruler className="w-4 h-4" />
-              <span>{dimensionsText}</span>
-            </div>
-            
-            <div className="flex items-center gap-2 text-gray-600">
-              <Package className="w-4 h-4" />
-              <span>{categoryInfo.label}</span>
-            </div>
+        
+        <div className="text-right">
+          <div className="text-lg font-bold text-blue-600">
+            {formattedPrice}
           </div>
-        )}
+          {showDetails && (
+            <div className="text-xs text-gray-500 mt-1">
+              База: {formatPrice(item.price)}
+            </div>
+          )}
+        </div>
+      </div>
 
-        {/* Описание */}
-        {product.description && showDetails && (
-          <p className="text-sm text-gray-600 line-clamp-2">
-            {product.description}
+      {/* Коллекция и материалы */}
+      <div className="space-y-1 text-sm text-gray-600 mb-3">
+        <p>
+          <span className="font-medium">Коллекция:</span> {item.collection}
+        </p>
+        <p>
+          <span className="font-medium">Материалы:</span> {materialsText}
+        </p>
+        
+        {item.description && (
+          <p className="text-gray-500 text-xs mt-2">
+            {item.description}
           </p>
         )}
+      </div>
 
-        {/* Цена и расчеты */}
-        {showPrice && (
-          <div className="border-t pt-4">
-            <div className="grid grid-cols-2 gap-4 text-sm">
-              <div>
-                <span className="text-gray-500">Базовая цена:</span>
-                <div className="font-semibold">
-                  {product.basePrice.toLocaleString('ru-RU')} ₽
-                </div>
-              </div>
-              
-              <div>
-                <span className="text-gray-500">Итоговая цена:</span>
-                <div className="font-bold text-lg text-blue-600">
-                  {priceCalculation.finalPrice.toLocaleString('ru-RU')} ₽
-                </div>
-              </div>
+      {/* Детали ценообразования (если включены) */}
+      {showDetails && (
+        <div className="border-t pt-3 mt-3">
+          <div className="grid grid-cols-2 gap-2 text-xs text-gray-500">
+            <div>
+              Множитель коллекции: ×{calculatedPrice.collectionMultiplier}
             </div>
-
-            {materialsBreakdown.length > 0 && (
-              <div className="mt-3">
-                <span className="text-xs text-gray-500">
-                  Материалы: {materialsBreakdown.length} поз., 
-                  {priceCalculation.materialsCost.toLocaleString('ru-RU')} ₽
-                </span>
-              </div>
-            )}
+            <div>
+              Множитель материалов: ×{calculatedPrice.materialMultiplier.toFixed(2)}
+            </div>
           </div>
-        )}
+        </div>
+      )}
 
-        {/* Действия */}
-        <div className="flex gap-2 pt-2">
-          {onSelect && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={(e) => {
-                e.stopPropagation()
-                handleSelect()
-              }}
-              className="flex-1"
+      {/* Размеры (если есть) */}
+      {item.dimensions && (
+        <div className="border-t pt-2 mt-3">
+          <p className="text-xs text-gray-500">
+            Размеры: {item.dimensions.width}×{item.dimensions.height}×{item.dimensions.depth} {item.dimensions.unit}
+          </p>
+        </div>
+      )}
+
+      {/* Действия */}
+      {(onEdit || onDelete) && (
+        <div className="flex gap-2 mt-3 pt-3 border-t">
+          {onEdit && (
+            <button
+              onClick={() => onEdit(item)}
+              className="text-sm text-blue-600 hover:text-blue-800 font-medium"
             >
-              Выбрать
-            </Button>
+              Редактировать
+            </button>
           )}
-          
-          {onCalculate && showPrice && (
-            <Button
-              variant="default"
-              size="sm"
-              onClick={(e) => {
-                e.stopPropagation()
-                handleCalculate()
-              }}
-              className="flex items-center gap-1"
+          {onDelete && item.id && (
+            <button
+              onClick={() => onDelete(item.id!)}
+              className="text-sm text-red-600 hover:text-red-800 font-medium ml-auto"
             >
-              <Calculator className="w-4 h-4" />
-              Расчет
-            </Button>
+              Удалить
+            </button>
           )}
         </div>
-      </CardContent>
-    </Card>
+      )}
+    </div>
   )
 })
 
 FurnitureItem.displayName = 'FurnitureItem'
+
+export default FurnitureItem
