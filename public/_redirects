@@ -1,8 +1,5 @@
-# Serve static files as-is (implicit in Pages, left for clarity)
-/main.css   /main.css   200
-/main.js    /main.js    200
-/assets/*   /assets/:splat  200
+# SPA routing для мебельной фабрики WASSER
+/*    /index.html   200
 
-# SPA fallback (only if the requested file doesn't exist)
-# This ensures client-side routing works without breaking static assets.
-
+# API редиректы (если используется)
+/api/*  https://api.wasser.ru/:splat  200

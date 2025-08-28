@@ -1,14 +1,13 @@
 {
   "name": "wasser-furniture-factory",
   "version": "1.0.0",
-  "description": "🏗️ Система управления мебельной фабрикой WASSER с функциональной архитектурой и типобезопасностью",
+  "description": "WASSER мебельная фабрика - система управления каталогом и ценообразованием",
   "type": "module",
   "private": true,
   "scripts": {
     "dev": "vite --host --port 5173",
     "build:analyze": "npm run build && npx vite-bundle-analyzer dist",
     "build:dev": "vite build --mode development",
-    "preview": "vite preview",
     "type-check:watch": "tsc --noEmit --skipLibCheck --watch",
     "lint": "eslint src --ext ts,tsx --report-unused-disable-directives --max-warnings 100",
     "format:check": "prettier --check \"src/**/*.{ts,tsx,js,jsx,json,css,md}\" --config .prettierrc",
@@ -62,9 +61,11 @@
     "dashboard:dev": "vite --mode development",
     "dashboard:analyze": "npm run build && npx source-map-explorer 'dist/assets/*.js'",
     "dashboard:build": "tsc -p tsconfig.node.json && vite build --mode production",
-    "build": "tsc -p tsconfig.node.json && vite build",
     "lint:fix": "eslint . --fix",
-    "clean:cache": "rimraf node_modules/.vite dist/.vite"
+    "clean:cache": "rimraf node_modules/.vite dist/.vite",
+    "build": "tsc -p tsconfig.node.json && vite build --mode production",
+    "build:cloudflare": "npm run build",
+    "preview": "vite preview"
   },
   "lint-staged": {
     "src/**/*.{ts,tsx}": [
